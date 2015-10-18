@@ -1,6 +1,6 @@
 {
   "name": "mpu9250",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Simple reading Data from mpu9250 with node.js and i2c package",
   "main": "mpu9250.js",
   "scripts": {
@@ -18,5 +18,10 @@
   "bugs": {
     "url": "https://github.com/miniben-90/mpu9250/issues"
   },
-  "homepage": "https://github.com/miniben-90/mpu9250"
+  "homepage": "https://github.com/miniben-90/mpu9250",
+  "Dependencies": {
+    "i2c": ">=0.2.1",
+    "extend": ">=3.0.0",
+    "sleep": ">=3.0.0"
+  }
 }
