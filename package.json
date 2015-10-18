@@ -1,23 +1,22 @@
 {
   "name": "mpu9250",
-  "version": "0.0.0",
-  "description": "A small library providing utility methods to escape and unescape HTML entities",
-  "main": "index.js",
+  "version": "0.0.1",
+  "description": "Simple reading Data from mpu9250 with node.js and i2c package",
+  "main": "mpu9250.js",
   "scripts": {
-    "test": "echo "Error: no test specified" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git://github.com/miniben-90/mpu9250.git"
   },
   "keywords": [
-    "escape",
-    "unescape",
     "mpu9250"
   ],
-  "author": "BENKHADRA Hocine <hocine.benkhadra@gmail.com>",
+  "author": "BENKHADRA Hocine",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/miniben-90/mpu9250/issues"
-  }
+  },
+  "homepage": "https://github.com/miniben-90/mpu9250"
 }
