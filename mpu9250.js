@@ -1,12 +1,42 @@
 /**
- *
+ * 
  * NodeJs Module : MPU9250
  * @author BENKHADRA Hocine
  * @description Simple reading data for node js and mpu9250
  * @version 0.0.1
- * @createddate 2015-10-18
  * @dependent i2c, extend, sleep
+ * @license MIT
+ * 
  */
+ 
+///////////////////////////////////////////////////////////////////////////////////////
+//***********************************************************************************//
+//**                                                                               **//
+//**                                                                               **//
+//** The MIT License (MIT)                                                         **//
+//**                                                                               **//
+//** Copyright (c) <2015> <BENKHADRA Hocine>                                       **//
+//**                                                                               **//
+//** Permission is hereby granted, free of charge, to any person obtaining a copy  **//
+//** of this software and associated documentation files (the "Software"), to deal **//
+//** in the Software without restriction, including without limitation the rights  **//
+//** to use, copy, modify, merge, publish, distribute, sublicense, and/or sell     **//
+//** copies of the Software, and to permit persons to whom the Software is         **//
+//** furnished to do so, subject to the following conditions:                      **//
+//**                                                                               **//
+//** The above copyright notice and this permission notice shall be included in    **//
+//** all copies or substantial portions of the Software.                           **//
+//**                                                                               **//
+//** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR    **//
+//** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,      **//
+//** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE   **//
+//** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER        **//
+//** LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, **//
+//** OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN     **//
+//** THE SOFTWARE.                                                                 **//
+//**                                                                               **//
+//***********************************************************************************//
+///////////////////////////////////////////////////////////////////////////////////////
 
 /*********************/
 /** Module required **/
@@ -38,7 +68,16 @@ var MPU9250 = {
 	RA_ACCEL_CONFIG: 0x1C,
 	
 	RA_INT_PIN_CFG: 0x37,
-	INTCFG_I2C_BYPASS_EN_BIT: 1,
+	
+	INTCFG_ACTL_BIT: 7,
+	INTCFG_OPEN_BIT: 6,
+	INTCFG_LATCH_INT_EN_BIT_BIT: 5,
+	INTCFG_INT_ANYRD_2CLEAR_BIT: 4,
+	INTCFG_ACTL_FSYNC_BIT: 3,
+	INTCFG_FSYNC_INT_MODE_EN_BIT: 2,
+	INTCFG_BYPASS_EN_BIT: 1,
+	INTCFG_NONE_BIT: 0,
+	
 	BY_PASS_MODE: 0x02,
 
 	ACCEL_XOUT_H: 0x3B,
@@ -89,6 +128,9 @@ var MPU9250 = {
 	ACCEL_FS_8: 0x02,
 	ACCEL_FS_16: 0x03,
 	
+	I2C_SLV0_DO: 0x63,
+	I2C_SLV1_DO: 0x64,
+	I2C_SLV2_DO: 0x65,
 	
 	USERCTRL_DMP_EN_BIT: 7,
 	USERCTRL_FIFO_EN_BIT: 6,
@@ -104,23 +146,37 @@ var MPU9250 = {
 /** AK8963 MAP **/
 /****************/
 var AK8963 = {
-	AK8963_ADDRESS: 0x0C,
-	WHO_AM_I_AK8963: 0x00, // should return 0x48
+	ADDRESS: 0x0C,
+	WHO_AM_I: 0x00, // should return 0x48
 	INFO: 0x01,
-	AK8963_ST1: 0x02,  // data ready status bit 0
-	AK8963_XOUT_L: 0x03,  // data
-	AK8963_XOUT_H: 0x04,
-	AK8963_YOUT_L: 0x05,
-	AK8963_YOUT_H: 0x06,
-	AK8963_ZOUT_L: 0x07,
-	AK8963_ZOUT_H: 0x08,
-	AK8963_ST2: 0x09,  // Data overflow bit 3 and data read error status bit 2
-	AK8963_CNTL: 0x0A,  // Power down (0000), single-measurement (0001), self-test (1000) and Fuse ROM (1111) modes on bits 3:0
-	AK8963_ASTC: 0x0C,  // Self test control
-	AK8963_I2CDIS: 0x0F,  // I2C disable
-	AK8963_ASAX: 0x10,  // Fuse ROM x-axis sensitivity adjustment value
-	AK8963_ASAY: 0x11,  // Fuse ROM y-axis sensitivity adjustment value
-	AK8963_ASAZ: 0x12
+	ST1: 0x02,  // data ready status bit 0
+	XOUT_L: 0x03,  // data
+	XOUT_H: 0x04,
+	YOUT_L: 0x05,
+	YOUT_H: 0x06,
+	ZOUT_L: 0x07,
+	ZOUT_H: 0x08,
+	ST2: 0x09,  // Data overflow bit 3 and data read error status bit 2
+	CNTL: 0x0A,  // Power down (0000), single-measurement (0001), self-test (1000) and Fuse ROM (1111) modes on bits 3:0
+	ASTC: 0x0C,  // Self test control
+	I2CDIS: 0x0F,  // I2C disable
+	ASAX: 0x10,  // Fuse ROM x-axis sensitivity adjustment value
+	ASAY: 0x11,  // Fuse ROM y-axis sensitivity adjustment value
+	ASAZ: 0x12,
+	
+	WHO_AM_I_BIT: 1,
+	CNTL_MODE_BIT: 0,
+	
+	ST1_DRDY_BIT: 0,
+	ST1_DOR_BIT: 1,
+	
+	CNTL_MODE_OFF: 0x00, // Power-down mode
+	CNTL_MODE_SINGLE_MESURE: 0x01, // Single measurement mode
+	CNTL_MODE_CONTINUE_MESURE_1: 0x02, // Continuous measurement mode 1
+	CNTL_MODE_CONTINUE_MESURE_2: 0x06, // Continuous measurement mode 2
+	CNTL_MODE_EXT_TRIG_MESURE: 0x04, // External trigger measurement mode
+	CNTL_MODE_SELF_TEST_MODE: 0x08, // Self-test mode
+	CNTL_MODE_FULL_ROM_ACCESS: 0x0F  // Fuse ROM access mode
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +193,7 @@ var mpu9250 = function(cfg) {
 	cfg = cfg || {};
 	if (typeof cfg != "object")
 		cfg = {};
-	config = extend({},{device: '/dev/i2c-1', address: MPU9250.ADDRESS_AD0_LOW, UpMagneto: false, DEBUG: false, ak_address: AK8963.AK8963_ADDRESS},cfg);
+	config = extend({},{device: '/dev/i2c-1', address: MPU9250.ADDRESS_AD0_LOW, UpMagneto: false, DEBUG: false, ak_address: AK8963.ADDRESS},cfg);
 	this._config = config;
 };
 
@@ -152,7 +208,7 @@ mpu9250.prototype.initialize = function() {
 	this.debug.Log('INFO','Initialization MPU9250 ....');
 	
 	// clear configuration
-	this.i2c.writeBit(MPU9250.MPUREG_PWR_MGMT_1, 1, 0x80, function() {});
+	this.i2c.writeBit(MPU9250.PWR_MGMT_1, 1, 0x80, function() {});
 	this.debug.Log('INFO', 'Reset configuration MPU9250.');
 	sleep.usleep(10000);
 	
@@ -163,12 +219,12 @@ mpu9250.prototype.initialize = function() {
 	
 	// define gyro range
 	this.setFullScaleGyroRange(MPU9250.GYRO_FS_250);
-	this.debug.Log('INFO', 'Set setFullScaleGyroRange to 0x' + MPU9250.GYRO_FS_250.toString(16));
+	this.debug.Log('INFO', 'Set setFullScaleGyroRange to 0x' + MPU9250.GYRO_FS_2000.toString(16));
 	sleep.usleep(10000);
 	
 	// define accel range
 	this.setFullScaleAccelRange(MPU9250.ACCEL_FS_4);
-	this.debug.Log('INFO', 'Set setFullScaleAccelRange to 0x' + MPU9250.ACCEL_FS_4.toString(16));
+	this.debug.Log('INFO', 'Set setFullScaleAccelRange to 0x' + MPU9250.ACCEL_FS_16.toString(16));
 	sleep.usleep(10000);
 	
 	// desiable sleepEnabled
@@ -203,16 +259,19 @@ mpu9250.prototype.testDevice = function() {
  */
 mpu9250.prototype.enableMagnetometer = function() {
 	if (this.i2c) {
-		this.debug.Log('INFO', 'Set address 0x' + MPU9250.RA_INT_PIN_CFG.toString(16) + ' bit 1 value to 0x02');
-		this.i2c.writeBit(MPU9250.RA_INT_PIN_CFG, 1, 0x02,function(){});
-		sleep.usleep(10000);
+		this.debug.Log('INFO', 'Disable I2C Master');
+		this.setI2CMasterModeEnabled(false);
+		sleep.usleep(100000);
 		
-		// buffer = this.i2c.readBit(MPU9250.RA_INT_PIN_CFG, 1, 8, function(){});
-		buffer = this.i2c.readBytes(MPU9250.RA_INT_PIN_CFG, 8, function(){});
-		this.debug.Log('INFO', 'Get address ' + MPU9250.RA_INT_PIN_CFG.toString(16) + ' value is 0x' + buffer[1].toString(16));
-		if (buffer[1] & 0x02) {	
+		this.debug.Log('INFO', 'Enable BYPASS');
+		this.setByPASSEnabled(true);
+		sleep.usleep(100000);
+		
+		buffer = this.getByPASSEnabled();
+		if (buffer & 0x02) {	
 			this.debug.Log('INFO', 'Creation of a new Class ak8963.');
 			this.ak8963 = new ak8963(this._config);
+			
 			this.debug.Log('INFO', 'END of configuration of magnetometer.');
 		} else {
 			this.debug.Log('ERROR', 'Can\'t turn on RA_INT_PIN_CFG.');
@@ -282,6 +341,24 @@ mpu9250.prototype.getMotion6 = function() {
 };
 
 /**
+ * @name getMotion9
+ * @return array | false
+ */
+
+mpu9250.prototype.getMotion9 = function() {
+	if (this.i2c) {
+		mpudata = this.getMotion6();
+		if (this.ak8963) {
+			magdata = this.ak8963.getMotion6();
+		} else {
+			magdata = [0,0,0];
+		}
+		return mpudata.concat(magdata);
+	}
+	return false;
+};
+ 
+/**
  * @name getAccel
  * @return array | false
  */ 
@@ -319,7 +396,7 @@ mpu9250.prototype.getGyro = function() {
  */
 mpu9250.prototype.getSleepEnabled = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_SLEEP_BIT, function() {}); 
+		return this.i2c.readBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_SLEEP_BIT); 
 	}
 	return false;
 };
@@ -330,7 +407,7 @@ mpu9250.prototype.getSleepEnabled = function() {
  */
 mpu9250.prototype.getClockSource = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_CLKSEL_BIT, function() {}); 
+		return this.i2c.readBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_CLKSEL_BIT); 
 	}
 	return false;
 };
@@ -341,7 +418,7 @@ mpu9250.prototype.getClockSource = function() {
  */
  mpu9250.prototype.getFullScaleGyroRange = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(MPU9250.RA_GYRO_CONFIG, MPU9250.PWR1_CLKSEL_BIT, function() {}); 
+		return this.i2c.readBit(MPU9250.RA_GYRO_CONFIG, MPU9250.PWR1_CLKSEL_BIT); 
 	}
 	return false;
 };
@@ -352,10 +429,21 @@ mpu9250.prototype.getClockSource = function() {
  */
 mpu9250.prototype.getFullScaleAccelRange = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(MPU9250.RA_ACCEL_CONFIG, MPU9250.PWR1_CLKSEL_BIT, function() {}); 
+		return this.i2c.readBit(MPU9250.RA_ACCEL_CONFIG, MPU9250.PWR1_CLKSEL_BIT); 
 	}
 	return false;
 }
+
+/**
+ * @name getByPASSEnabled
+ * @return undefined | false
+ */
+mpu9250.prototype.getByPASSEnabled = function() {
+	if (this.i2c) {
+		return this.i2c.readBit(MPU9250.RA_INT_PIN_CFG, MPU9250.INTCFG_BYPASS_EN_BIT);
+	}
+	return false;
+};
 
 /**---------------------|[ SET ]|--------------------**/
 
@@ -365,7 +453,7 @@ mpu9250.prototype.getFullScaleAccelRange = function() {
  */
 mpu9250.prototype.setClockSource = function(adrs) {
 	if (this.i2c) {
-		return this.i2c.writeBits(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_CLKSEL_BIT, MPU9250.PWR1_CLKSEL_LENGTH, adrs, function(){});
+		return this.i2c.writeBits(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_CLKSEL_BIT, MPU9250.PWR1_CLKSEL_LENGTH, adrs);
 	}
 	return false;
 };
@@ -376,7 +464,7 @@ mpu9250.prototype.setClockSource = function(adrs) {
  */
 mpu9250.prototype.setFullScaleGyroRange = function(adrs) {
 	if (this.i2c) {
-		return this.i2c.writeBits(MPU9250.RA_GYRO_CONFIG, MPU9250.PWR1_CLKSEL_BIT, MPU9250.PWR1_CLKSEL_LENGTH, adrs,function(){});
+		return this.i2c.writeBits(MPU9250.RA_GYRO_CONFIG, MPU9250.PWR1_CLKSEL_BIT, MPU9250.PWR1_CLKSEL_LENGTH, adrs);
 	}
 	return false;
 };
@@ -387,7 +475,7 @@ mpu9250.prototype.setFullScaleGyroRange = function(adrs) {
  */
 mpu9250.prototype.setFullScaleAccelRange = function(adrs) {
 	if (this.i2c) {
-		return this.i2c.writeBits(MPU9250.RA_ACCEL_CONFIG, MPU9250.PWR1_CLKSEL_BIT, MPU9250.PWR1_CLKSEL_LENGTH, adrs,function(){});
+		return this.i2c.writeBits(MPU9250.RA_ACCEL_CONFIG, MPU9250.PWR1_CLKSEL_BIT, MPU9250.PWR1_CLKSEL_LENGTH, adrs);
 	}
 	return false;
 };
@@ -399,7 +487,7 @@ mpu9250.prototype.setFullScaleAccelRange = function(adrs) {
 mpu9250.prototype.setSleepEnabled = function(bool) {
 	adrs = (bool === true);
 	if (this.i2c) {
-		return this.i2c.writeBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_SLEEP_BIT, adrs,function(){});
+		return this.i2c.writeBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_SLEEP_BIT, adrs);
 	}
 	return false;
 };
@@ -411,7 +499,19 @@ mpu9250.prototype.setSleepEnabled = function(bool) {
 mpu9250.prototype.setI2CMasterModeEnabled = function(bool) {
 	adrs = (bool === true);
 	if (this.i2c) {
-		return this.i2c.writeBit(MPU9250.RA_USER_CTRL, MPU9250.USERCTRL_I2C_MST_EN_BIT, adrs,function(){});
+		return this.i2c.writeBit(MPU9250.RA_USER_CTRL, MPU9250.USERCTRL_I2C_MST_EN_BIT, adrs);
+	}
+	return false;
+};
+
+/**
+ * @name setByPASSEnabled
+ * @return undefined | false
+ */
+mpu9250.prototype.setByPASSEnabled = function(bool) {
+	adrs = (bool === true);
+	if (this.i2c) {
+		return this.i2c.writeBit(MPU9250.RA_INT_PIN_CFG, MPU9250.INTCFG_BYPASS_EN_BIT, adrs);
 	}
 	return false;
 };
@@ -422,49 +522,111 @@ mpu9250.prototype.setI2CMasterModeEnabled = function(bool) {
 // /** ---------------------------------------------------------------------- **/ //
 ////////////////////////////////////////////////////////////////////////////////////
 
-var ak8963 = function(config) {
+var ak8963 = function(config, callback) {
+	callback = callback || function() {};
 	this._config = config;
 	this.debug = new debugConsole(config.DEBUG);
-	this._config.ak_address = this._config.ak_address || AK8963.AK8963_ADDRESS;
+	this._config.ak_address = this._config.ak_address || AK8963.ADDRESS;
 	this.debug.Log('INFO', 'AK8963 Address is 0x' + this._config.ak_address.toString(16) + ', Device is ' + this._config.device);
 	// connection with magnetometer
 	this.i2c = new LOCAL_I2C(this._config.ak_address, {device: this._config.device});
-	sleep.usleep(10000);
-	
-	// enable magnetomater
-	buffer = this.i2c.readBytes(AK8963.WHO_AM_I_AK8963, 8, function(){});
-	sleep.usleep(10000);
-	if (this._config.DEBUG) {
-		this.debug.Log('INFO', 'WHO_AM_I_AK8963 value is ');
-		console.log(buffer);
+	sleep.usleep(100000);
+	buffer = this.getIDDevice();
+	this.debug.Log('INFO', 'Device ID is ' + buffer.toString(16));
+
+	if (buffer & 0x48) {
+		this.debug.Log('INFO', 'Magnetometer data is ready to work.');
+		this.setCNTL(AK8963.CNTL_MODE_SINGLE_MESURE);
+		sleep.usleep(100000);
+		buffer = this.getDataReady();
+		if (buffer & 0x01) {
+			this.debug.Log('INFO', 'DATA is ready, buffer value : ' + buffer.toString(16));
+			this.getMotion6();
+			callback(true);
+			this._ready = true;
+		} else {
+			this.debug.Log('INFO', 'DATA is not ready, buffer value : ' + buffer.toString(16));
+		}
+	} else {
+		this.debug.Log('ERROR', 'Device ID is not equal to 0x48, device value is ' + buffer.toString(16));
 	}
-	
-	/*
-	this.i2c.writeBit(AK8963.AK8963_CNTL,  1, 0x01,function(){});
-	sleep.usleep(10000);
-	buffer = this.i2c.readBytes(AK8963.AK8963_ST1, 1, function(){});
-	console.log(buffer & 0x01);
-	*/
+	this._ready = false;
+	callback(false);
 };
 
-ak8963.prototype.getIDDevice = function() {
+/**------------------|[ FUNCTION ]|------------------**/
+
+
+/**---------------------|[ GET ]|--------------------**/
+
+/**
+ * @name getDataReady
+ * @return byte | false
+ */
+ak8963.prototype.getDataReady = function() {
 	if (this.i2c) {
-		var buf = this.i2c.readBytes(AK8963.WHO_AM_I_AK8963, 1, function(){});
-		return buf[0];
+		return this.i2c.readBit(AK8963.ST1, AK8963.ST1_DRDY_BIT);
 	}
 	return false;
 };
 
+ 
+/**
+ * @name getIDDevice
+ * @return byte | false
+ */
+ak8963.prototype.getIDDevice = function() {
+	if (this.i2c) {
+		return this.i2c.readBit(AK8963.WHO_AM_I, AK8963.WHO_AM_I_BIT);
+	}
+	return false;
+};
+
+/**
+ * @name getMotion6
+ * @return array | false
+ */
 ak8963.prototype.getMotion6 = function() {
 	if (this.i2c) {
-		
-		var buffer = this.i2c.readBytes(AK8963.AK8963_XOUT_L, 6, function(){});
-		
-		return [
-			buffer.readInt16BE(0),
-			buffer.readInt16BE(2),
-			buffer.readInt16BE(4)
-		];
+		var buffer = this.i2c.readBytes(AK8963.XOUT_L, 7, function(){});
+		if (!(buffer[6] & 0x08)) {
+			return [
+				buffer.readInt16BE(0),
+				buffer.readInt16BE(2),
+				buffer.readInt16BE(4)
+			];
+		}
+	}
+	return false;
+};
+
+/**
+ * @name getCNTL
+ * @return byte | false
+ */
+ak8963.prototype.getCNTL = function() {
+	if (this.i2c) {
+		return this.i2c.readBit(AK8963.CNTL, AK8963.CNTL_MODE_BIT);
+	}
+	return false;
+};
+
+/**---------------------|[ SET ]|--------------------**/
+
+/**
+ * @name setCNTL
+ * CNTL_MODE_OFF: 0x00, // Power-down mode
+ * CNTL_MODE_SINGLE_MESURE: 0x01, // Single measurement mode
+ * CNTL_MODE_CONTINUE_MESURE_1: 0x02, // Continuous measurement mode 1
+ * CNTL_MODE_CONTINUE_MESURE_2: 0x06, // Continuous measurement mode 2
+ * CNTL_MODE_EXT_TRIG_MESURE: 0x04, // External trigger measurement mode
+ * CNTL_MODE_SELF_TEST_MODE: 0x08, // Self-test mode
+ * CNTL_MODE_FULL_ROM_ACCESS: 0x0F  // Fuse ROM access mode
+ * @return undefined | false
+ */
+ak8963.prototype.setCNTL = function(adrs) {
+	if (this.i2c) {
+		return this.i2c.writeBit(AK8963.CNTL, AK8963.CNTL_MODE_BIT, adrs);
 	}
 	return false;
 };
@@ -508,19 +670,22 @@ LOCAL_I2C.prototype.bitMask = function(bit, length) {
 };
 
 LOCAL_I2C.prototype.readBit = function(adrs, bit, length, callback) {
+	callback = callback || function(e,r) {};
 	var buf = this.readBytes(adrs, 1, callback);
 	return buf[0];
 };
 
 LOCAL_I2C.prototype.writeBits = function(adrs, bit, legnth, value, callback) {
-  var oldValue = this.readBytes(adrs, 1, function(err, buf) {});
-  var mask = this.bitMask(bit, legnth);
-  var newValue = oldValue ^ ((oldValue ^ (value << bit)) & mask);
-  return this.writeBytes(adrs, [newValue], callback);
+	callback = callback || function(e,r) {};
+	var oldValue = this.readBytes(adrs, 1, callback);
+	var mask = this.bitMask(bit, legnth);
+	var newValue = oldValue ^ ((oldValue ^ (value << bit)) & mask);
+	return this.writeBytes(adrs, [newValue], callback);
 };
 
 LOCAL_I2C.prototype.writeBit = function(adrs, bit, value, callback) {
-  return this.writeBits(adrs, bit, 1, value, callback);
+	callback = callback || function(e,r) {};
+	return this.writeBits(adrs, bit, 1, value, callback);
 };
 
 /*******************************/
