@@ -284,7 +284,7 @@ mpu9250.prototype.enableMagnetometer = function() {
 
 /**---------------------|[ GET ]|--------------------**/
 /**
- * @name getTemperature
+ * @name getIDDevice
  * @return Byte | false
  */
 mpu9250.prototype.getIDDevice = function() {
@@ -319,6 +319,13 @@ mpu9250.prototype.getTemperatureCelsius = function() {
 		return inc + '°C';
 	}
 	return 'no data';
+};
+
+mpu9250.prototype.getTemperatureCelsiusDigital = function() {
+	if ((TEMP_OUT = this.getTemperature()) !== false) {
+		return (TEMP_OUT / 333.87) + 21.0;
+	}
+	return 0;
 };
 
 /**
