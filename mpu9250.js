@@ -3,7 +3,6 @@
  * NodeJs Module : MPU9250
  * @author BENKHADRA Hocine
  * @description Simple reading data for node js and mpu9250
- * @version 0.0.1
  * @dependent i2c, extend, sleep
  * @license MIT
  * 
@@ -52,16 +51,6 @@ var MPU9250 = {
 	ADDRESS_AD0_LOW: 0x68,
 	ADDRESS_AD0_HIGHT: 0x69,
 	WHO_AM_I: 0x75,
-
-	GYRO_FULL_SCALE_250_DPS: 0x00, 
-	GYRO_FULL_SCALE_500_DPS: 0x08,
-	GYRO_FULL_SCALE_1000_DPS: 0x10,
-	GYRO_FULL_SCALE_2000_DPS: 0x18,
-
-	ACC_FULL_SCALE_2_G: 0x00,
-	ACC_FULL_SCALE_4_G: 0x08,
-	ACC_FULL_SCALE_8_G: 0x10,
-	ACC_FULL_SCALE_16_G: 0x18,
 	
 	RA_CONFIG: 0x1A,
 	RA_GYRO_CONFIG: 0x1B,
@@ -193,7 +182,18 @@ var mpu9250 = function(cfg) {
 	cfg = cfg || {};
 	if (typeof cfg != "object")
 		cfg = {};
-	config = extend({},{device: '/dev/i2c-1', address: MPU9250.ADDRESS_AD0_LOW, UpMagneto: false, DEBUG: false, ak_address: AK8963.ADDRESS},cfg);
+	
+	var default = {
+		device: '/dev/i2c-1',
+		address: MPU9250.ADDRESS_AD0_LOW,
+		UpMagneto: false,
+		DEBUG: false,
+		ak_address: AK8963.ADDRESS,
+		GYRO_FS: 0,
+		ACCEL_FS: 2
+	};
+	
+	config = extend({}, default,cfg);
 	this._config = config;
 };
 
@@ -218,12 +218,18 @@ mpu9250.prototype.initialize = function() {
 	sleep.usleep(10000);
 	
 	// define gyro range
-	this.setFullScaleGyroRange(MPU9250.GYRO_FS_250);
+	gyro_fs = [MPU9250.GYRO_FS_250, MPU9250.GYRO_FS_500, MPU9250.GYRO_FS_1000, MPU9250.GYRO_FS_2000];	
+	gyro_value = MPU9250.GYRO_FS_250;
+	if (this._config.GYRO_FS > -1 && this._config.GYRO_FS < 4) gyro_value = gyro_fs[this._config.GYRO_FS];
+	this.setFullScaleGyroRange(gyro_value);
 	this.debug.Log('INFO', 'Set setFullScaleGyroRange to 0x' + MPU9250.GYRO_FS_2000.toString(16));
 	sleep.usleep(10000);
 	
 	// define accel range
-	this.setFullScaleAccelRange(MPU9250.ACCEL_FS_4);
+	accel_fs = [MPU9250.ACCEL_FS_2, MPU9250.ACCEL_FS_4, MPU9250.ACCEL_FS_8, MPU9250.ACCEL_FS_16];	
+	accel_value = MPU9250.ACCEL_FS_4;
+	if (this._config.ACCEL_FS > -1 && this._config.ACCEL_FS < 4) accel_value = accel[this._config.ACCEL_FS];
+	this.setFullScaleAccelRange();
 	this.debug.Log('INFO', 'Set setFullScaleAccelRange to 0x' + MPU9250.ACCEL_FS_16.toString(16));
 	sleep.usleep(10000);
 	
@@ -642,6 +648,67 @@ ak8963.prototype.constructor = ak8963;
 
 ////////////////////////////////////////////////////////////////////////////////////
 // /** ---------------------------------------------------------------------- **/ //
+//  *		 				Calman filter									   *  //
+// /** ---------------------------------------------------------------------- **/ //
+////////////////////////////////////////////////////////////////////////////////////
+
+var calmanFilter = function() {
+	this.Q_angle = 0.001;
+	this.Q_bias = 0.003;
+	this.R_measure = 0.03;
+	
+	this.angle = 0;
+	this.bias = 0;
+	this.rate = 0;
+	
+	this.P = [[0,0],[0,0]];
+	
+	this.S = 0;
+	this.K = [];
+	this.Y = 0;
+	
+	this.getAngle = function(newAngle, newRate, dt) {
+		
+		this.rate = newRate - this.bias;
+		this.angle += dt * this.rate;
+		
+		this.P[0][0] += dt * (dt*this.P[1][1] - this.P[0][1] - this.P[1][0] + this.Q_angle);
+		this.P[0][1] -= dt * this.P[1][1];
+		this.P[1][0] -= dt * this.P[1][1];
+		this.P[1][1] += this.Q_bias * dt;
+		
+		this.S = this.P[0][0] + this.R_measure;
+		
+		this.K[0] = this.P[0][0] / this.S;
+		this.K[1] = this.P[1][0] / this.S;
+		
+		this.Y = newAngle - this.angle;
+		
+		this.angle += this.K[0] * this.Y;
+		this.bias += this.K[1] * this.Y;
+		
+		this.P[0][0] -= this.K[0] * this.P[0][0];
+		this.P[0][1] -= this.K[0] * this.P[0][1];
+		this.P[1][0] -= this.K[1] * this.P[0][0];
+		this.P[1][1] -= this.K[1] * this.P[0][1];
+		
+		return this.angle;
+	};
+	
+	this.getRate     = function() { return this.rate; };
+	this.getQangle   = function() { return this.Q_angle; };
+	this.getQbias    = function() { return this.Q_bias; };
+	this.getRmeasure = function() { return this.R_measure; };
+	
+	this.setAngle    = function(value) { this.angle = value; };
+	this.setQangle   = function(value) { this.Q_angle = value; };
+	this.setQbias    = function(value) { this.Q_bias = value; };
+	this.setRmeasure = function(value) { this.R_measure = value; };
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// /** ---------------------------------------------------------------------- **/ //
 //  *		 					Debug Console Configuration					   *  //
 // /** ---------------------------------------------------------------------- **/ //
 ////////////////////////////////////////////////////////////////////////////////////
@@ -700,3 +767,4 @@ LOCAL_I2C.prototype.writeBit = function(adrs, bit, value, callback) {
 /*******************************/
 
 module.exports = mpu9250;
+module.exports = calmanFilter;
