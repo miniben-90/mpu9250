@@ -14,7 +14,7 @@
 	"url": "https://github.com/miniben-90/mpu9250/issues"
   },
   "keywords": [
-    "mpu9250",
+    "mpu9250"
   ],
   "Dependencies": {
     "i2c": ">=0.2.1",
