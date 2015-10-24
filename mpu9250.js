@@ -3,6 +3,7 @@
  * NodeJs Module : MPU9250
  * @author BENKHADRA Hocine
  * @description Simple reading data for node js and mpu9250
+ * @version 0.0.1
  * @dependent i2c, extend, sleep
  * @license MIT
  * 
@@ -183,7 +184,7 @@ var mpu9250 = function(cfg) {
 	if (typeof cfg != "object")
 		cfg = {};
 	
-	var default = {
+	var _default = {
 		device: '/dev/i2c-1',
 		address: MPU9250.ADDRESS_AD0_LOW,
 		UpMagneto: false,
@@ -193,7 +194,7 @@ var mpu9250 = function(cfg) {
 		ACCEL_FS: 2
 	};
 	
-	config = extend({}, default,cfg);
+	config = extend({}, _default,cfg);
 	this._config = config;
 };
 
@@ -228,7 +229,7 @@ mpu9250.prototype.initialize = function() {
 	// define accel range
 	accel_fs = [MPU9250.ACCEL_FS_2, MPU9250.ACCEL_FS_4, MPU9250.ACCEL_FS_8, MPU9250.ACCEL_FS_16];	
 	accel_value = MPU9250.ACCEL_FS_4;
-	if (this._config.ACCEL_FS > -1 && this._config.ACCEL_FS < 4) accel_value = accel[this._config.ACCEL_FS];
+	if (this._config.ACCEL_FS > -1 && this._config.ACCEL_FS < 4) accel_value = accel_fs[this._config.ACCEL_FS];
 	this.setFullScaleAccelRange();
 	this.debug.Log('INFO', 'Set setFullScaleAccelRange to 0x' + MPU9250.ACCEL_FS_16.toString(16));
 	sleep.usleep(10000);
@@ -458,6 +459,18 @@ mpu9250.prototype.getByPASSEnabled = function() {
 	return false;
 };
 
+mpu9250.prototype.getPitch = function(value) {
+	return ((Math.atan2(value[0], value[2]) + Math.PI) * (180 / Math.PI)) - 180;
+};
+
+mpu9250.prototype.getRoll = function(value) {
+	return ((Math.atan2(value[1], value[2]) + Math.PI) * (180 / Math.PI)) - 180;
+};
+
+mpu9250.prototype.getYaw = function(value) {
+	return 0;
+};
+
 /**---------------------|[ SET ]|--------------------**/
 
 /**
@@ -549,7 +562,7 @@ var ak8963 = function(config, callback) {
 
 	if (buffer & 0x48) {
 		this.debug.Log('INFO', 'Magnetometer data is ready to work.');
-		this.setCNTL(AK8963.CNTL_MODE_SINGLE_MESURE);
+		this.setCNTL(AK8963.CNTL_MODE_CONTINUE_MESURE_1);
 		sleep.usleep(100000);
 		buffer = this.getDataReady();
 		if (buffer & 0x01) {
@@ -648,11 +661,11 @@ ak8963.prototype.constructor = ak8963;
 
 ////////////////////////////////////////////////////////////////////////////////////
 // /** ---------------------------------------------------------------------- **/ //
-//  *		 				Calman filter									   *  //
+//  *		 				Kalman filter									   *  //
 // /** ---------------------------------------------------------------------- **/ //
 ////////////////////////////////////////////////////////////////////////////////////
 
-var calmanFilter = function() {
+mpu9250.prototype.Kalman_filter = function() {
 	this.Q_angle = 0.001;
 	this.Q_bias = 0.003;
 	this.R_measure = 0.03;
@@ -767,4 +780,3 @@ LOCAL_I2C.prototype.writeBit = function(adrs, bit, value, callback) {
 /*******************************/
 
 module.exports = mpu9250;
-module.exports = calmanFilter;
