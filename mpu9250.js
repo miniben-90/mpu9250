@@ -154,9 +154,6 @@ var AK8963 = {
 	ASAY: 0x11,  // Fuse ROM y-axis sensitivity adjustment value
 	ASAZ: 0x12,
 
-	WHO_AM_I_BIT: 1,
-	CNTL_MODE_BIT: 0,
-
 	ST1_DRDY_BIT: 0,
 	ST1_DOR_BIT: 1,
 
@@ -181,8 +178,9 @@ var AK8963 = {
  */
 var mpu9250 = function(cfg) {
 	cfg = cfg || {};
-	if (typeof cfg != "object")
+	if (typeof cfg !== 'object') {
 		cfg = {};
+	}
 
 	var _default = {
 		device: '/dev/i2c-1',
@@ -196,9 +194,6 @@ var mpu9250 = function(cfg) {
 
 	var config = extend({}, _default, cfg);
 	this._config = config;
-
-    this.MPU9250 = MPU9250;
-    this.AK8963 = AK8963;
 };
 
 /**
@@ -226,20 +221,18 @@ mpu9250.prototype.initialize = function() {
 	var gyro_value = MPU9250.GYRO_FS_250;
 	if (this._config.GYRO_FS > -1 && this._config.GYRO_FS < 4) gyro_value = gyro_fs[this._config.GYRO_FS];
 	this.setFullScaleGyroRange(gyro_value);
-	this.debug.Log('INFO', 'Set setFullScaleGyroRange to 0x' + MPU9250.GYRO_FS_2000.toString(16));
+	this.debug.Log('INFO', 'Set setFullScaleGyroRange to 0x' + gyro_value.toString(16));
 	sleep.usleep(10000);
 
 	// define accel range
 	var accel_fs = [MPU9250.ACCEL_FS_2, MPU9250.ACCEL_FS_4, MPU9250.ACCEL_FS_8, MPU9250.ACCEL_FS_16];
-
-	// TODO: SMW: Why is this variable not used?
 	var accel_value = MPU9250.ACCEL_FS_4;
 	if (this._config.ACCEL_FS > -1 && this._config.ACCEL_FS < 4) accel_value = accel_fs[this._config.ACCEL_FS];
-	this.setFullScaleAccelRange();
-	this.debug.Log('INFO', 'Set setFullScaleAccelRange to 0x' + MPU9250.ACCEL_FS_16.toString(16));
+	this.setFullScaleAccelRange(accel_value);
+	this.debug.Log('INFO', 'Set setFullScaleAccelRange to 0x' + accel_value.toString(16));
 	sleep.usleep(10000);
 
-	// desiable sleepEnabled
+	// disable sleepEnabled
 	this.setSleepEnabled(false);
 	this.debug.Log('INFO', 'SleepEnabled mode disabled');
 	sleep.usleep(10000);
@@ -262,7 +255,7 @@ mpu9250.prototype.initialize = function() {
  * @return boolean
  */
 mpu9250.prototype.testDevice = function() {
-	return (this.getIDDevice() & 0x71);
+	return (this.getIDDevice() === 0x71);
 };
 
 /**
@@ -279,17 +272,16 @@ mpu9250.prototype.enableMagnetometer = function() {
 		this.setByPASSEnabled(true);
 		sleep.usleep(100000);
 
-		var buffer = this.getByPASSEnabled();
-		if (buffer & 0x02) {
+		if (this.getByPASSEnabled()) {
 			this.debug.Log('INFO', 'Creation of a new Class ak8963.');
 			this.ak8963 = new ak8963(this._config);
 
 			this.debug.Log('INFO', 'END of configuration of magnetometer.');
+			return true;
 		} else {
 			this.debug.Log('ERROR', 'Can\'t turn on RA_INT_PIN_CFG.');
-			console.log(buffer);
 		}
-		//console.log(this.ak8963.getMotion6());
+
 	}
 	return false;
 };
@@ -297,11 +289,11 @@ mpu9250.prototype.enableMagnetometer = function() {
 /**---------------------|[ GET ]|--------------------**/
 /**
  * @name getIDDevice
- * @return Byte | false
+ * @return number | false
  */
 mpu9250.prototype.getIDDevice = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(MPU9250.WHO_AM_I, 6, 8, function(){});
+		return this.i2c.readByte(MPU9250.WHO_AM_I);
 	}
 	return false;
 };
@@ -312,7 +304,7 @@ mpu9250.prototype.getIDDevice = function() {
  */
 mpu9250.prototype.getTemperature = function() {
 	if (this.i2c) {
-		var buffer = this.i2c.readBytes(MPU9250.TEMP_OUT_H, 2, function(){});
+		var buffer = this.i2c.readBytes(MPU9250.TEMP_OUT_H, 2);
 		return buffer.readInt16BE(0);
 	}
 	return false;
@@ -326,17 +318,16 @@ mpu9250.prototype.getTemperatureCelsius = function() {
 /*
 ((TEMP_OUT – RoomTemp_Offset)/Temp_Sensitivity) + 21degC
 */
-    var TEMP_OUT = this.getTemperature();
-	if (TEMP_OUT !== false) {
-		var inc = (TEMP_OUT / 333.87) + 21.0;
-		return inc + '°C';
+    var TEMP_OUT = this.getTemperatureCelsiusDigital();
+	if (TEMP_OUT) {
+		return TEMP_OUT + '°C';
 	}
 	return 'no data';
 };
 
 mpu9250.prototype.getTemperatureCelsiusDigital = function() {
     var TEMP_OUT = this.getTemperature();
-	if (TEMP_OUT !== false) {
+	if (TEMP_OUT) {
 		return (TEMP_OUT / 333.87) + 21.0;
 	}
 	return 0;
@@ -371,7 +362,7 @@ mpu9250.prototype.getMotion9 = function() {
 		var mpudata = this.getMotion6();
         var magdata;
 		if (this.ak8963) {
-			magdata = this.ak8963.getMotion6();
+			magdata = this.ak8963.getMagAttitude();
 		} else {
 			magdata = [0, 0, 0];
 		}
@@ -414,7 +405,7 @@ mpu9250.prototype.getGyro = function() {
 
 /**
  * @name getSleepEnabled
- * @return byte | false
+ * @return number | false
  */
 mpu9250.prototype.getSleepEnabled = function() {
 	if (this.i2c) {
@@ -425,7 +416,7 @@ mpu9250.prototype.getSleepEnabled = function() {
 
 /**
  * @name getClockSource
- * @return byte | false
+ * @return number | false
  */
 mpu9250.prototype.getClockSource = function() {
 	if (this.i2c) {
@@ -436,18 +427,21 @@ mpu9250.prototype.getClockSource = function() {
 
 /**
  * @name getFullScaleGyroRange
- * @return byte | false
+ * @return number | false
  */
  mpu9250.prototype.getFullScaleGyroRange = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(MPU9250.RA_GYRO_CONFIG, MPU9250.PWR1_CLKSEL_BIT);
+		var byte = this.i2c.readByte(MPU9250.RA_GYRO_CONFIG);
+		byte = byte & 0x24;
+		byte = byte >> 3;
+		return byte;
 	}
 	return false;
 };
 
 /**
  * @name getFullScaleAccelRange
- * @return byte | false
+ * @return number | false
  */
 mpu9250.prototype.getFullScaleAccelRange = function() {
 	if (this.i2c) {
@@ -458,7 +452,7 @@ mpu9250.prototype.getFullScaleAccelRange = function() {
 
 /**
  * @name getByPASSEnabled
- * @return undefined | false
+ * @return number | false
  */
 mpu9250.prototype.getByPASSEnabled = function() {
 	if (this.i2c) {
@@ -519,7 +513,7 @@ mpu9250.prototype.setFullScaleAccelRange = function(adrs) {
  * @return undefined | false
  */
 mpu9250.prototype.setSleepEnabled = function(bool) {
-	var adrs = (bool === true);
+	var adrs = bool ? 1 : 0;
 	if (this.i2c) {
 		return this.i2c.writeBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_SLEEP_BIT, adrs);
 	}
@@ -531,7 +525,7 @@ mpu9250.prototype.setSleepEnabled = function(bool) {
  * @return undefined | false
  */
 mpu9250.prototype.setI2CMasterModeEnabled = function(bool) {
-	var adrs = (bool === true);
+	var adrs = bool ? 1 : 0;
 	if (this.i2c) {
 		return this.i2c.writeBit(MPU9250.RA_USER_CTRL, MPU9250.USERCTRL_I2C_MST_EN_BIT, adrs);
 	}
@@ -543,7 +537,7 @@ mpu9250.prototype.setI2CMasterModeEnabled = function(bool) {
  * @return undefined | false
  */
 mpu9250.prototype.setByPASSEnabled = function(bool) {
-	var adrs = (bool === true);
+	var adrs = bool ? 1 : 0;
 	if (this.i2c) {
 		return this.i2c.writeBit(MPU9250.RA_INT_PIN_CFG, MPU9250.INTCFG_BYPASS_EN_BIT, adrs);
 	}
@@ -561,31 +555,23 @@ var ak8963 = function(config, callback) {
 	this._config = config;
 	this.debug = new debugConsole(config.DEBUG);
 	this._config.ak_address = this._config.ak_address || AK8963.ADDRESS;
-	this.debug.Log('INFO', 'AK8963 Address is 0x' + this._config.ak_address.toString(16) + ', Device is ' + this._config.device);
+	this.debug.Log('INFO', 'AK8963: Address is 0x' + this._config.ak_address.toString(16) + ', Device is ' + this._config.device);
+
 	// connection with magnetometer
 	this.i2c = new LOCAL_I2C(this._config.ak_address, {device: this._config.device});
-	sleep.usleep(100000);
+	sleep.usleep(10000);
 	var buffer = this.getIDDevice();
-	this.debug.Log('INFO', 'Device ID is ' + buffer.toString(16));
+	this.debug.Log('INFO', 'AK8963: Device ID is 0x' + buffer.toString(16));
 
 	if (buffer & 0x48) {
-		this.debug.Log('INFO', 'Magnetometer data is ready to work.');
-		this.setCNTL(AK8963.CNTL_MODE_CONTINUE_MESURE_1);
-		sleep.usleep(100000);
-		buffer = this.getDataReady();
-		if (buffer & 0x01) {
-			this.debug.Log('INFO', 'DATA is ready, buffer value : ' + buffer.toString(16));
-			this.getMotion6();
-			callback(true);
-			this._ready = true;
-		} else {
-			this.debug.Log('INFO', 'DATA is not ready, buffer value : ' + buffer.toString(16));
-		}
+		this.debug.Log('INFO', 'AK8963: Set to Continuous Measure Mode.');
+		this.setCNTL(AK8963.CNTL_MODE_CONTINUE_MESURE_2);
+		sleep.usleep(10000);
+		this.getSensitivityAdjustmentValues();
 	} else {
-		this.debug.Log('ERROR', 'Device ID is not equal to 0x48, device value is ' + buffer.toString(16));
+		this.debug.Log('ERROR', 'AK8963: Device ID is not equal to 0x48, device value is 0x' + buffer.toString(16));
 	}
-	this._ready = false;
-	callback(false);
+	callback(true);
 };
 
 /**------------------|[ FUNCTION ]|------------------**/
@@ -595,7 +581,7 @@ var ak8963 = function(config, callback) {
 
 /**
  * @name getDataReady
- * @return byte | false
+ * @return number | false
  */
 ak8963.prototype.getDataReady = function() {
 	if (this.i2c) {
@@ -607,31 +593,58 @@ ak8963.prototype.getDataReady = function() {
 
 /**
  * @name getIDDevice
- * @return byte | false
+ * @return number | false
  */
 ak8963.prototype.getIDDevice = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(AK8963.WHO_AM_I, AK8963.WHO_AM_I_BIT);
+		return this.i2c.readByte(AK8963.WHO_AM_I);
 	}
 	return false;
 };
 
 /**
- * @name getMotion6
- * @return array | false
+ * Get the Sensitivity Adjustment values.  These were set during manufacture and allow us to get the actual H values
+ * from the magnetometer.
+ * @name getSensitivityAdjustmentValues
  */
-ak8963.prototype.getMotion6 = function() {
-	if (this.i2c) {
-		var buffer = this.i2c.readBytes(AK8963.XOUT_L, 7, function(){});
-		if (!(buffer[6] & 0x08)) {
-			return [
-				buffer.readInt16BE(0),
-				buffer.readInt16BE(2),
-				buffer.readInt16BE(4)
-			];
-		}
-	}
-	return false;
+ak8963.prototype.getSensitivityAdjustmentValues = function () {
+	this.asax = ((this.i2c.readByte(AK8963.ASAX) - 128) * 0.5 / 128 + 1);
+	this.asay = ((this.i2c.readByte(AK8963.ASAY) - 128) * 0.5 / 128 + 1);
+	this.asaz = ((this.i2c.readByte(AK8963.ASAZ) - 128) * 0.5 / 128 + 1);
+};
+
+/**
+ * Get the adjusted magnetometer attitude.
+ * @name getMagAttitude
+ * @return array
+ */
+ak8963.prototype.getMagAttitude = function() {
+	var values = this.getMagAttitudeRaw();
+	return [
+		values[0] * this.asax,
+		values[1] * this.asay,
+		values[2] * this.asay
+	];
+};
+
+/**
+ * Get the raw magnetometer values
+ * @name getMagAttitudeRaw
+ * @return array
+ */
+ak8963.prototype.getMagAttitudeRaw = function() {
+
+	// We need to do this to be able to trigger the next update
+	this.i2c.readByte(AK8963.ST2);
+
+	// Get the actual data
+	var buffer = this.i2c.readBytes(AK8963.XOUT_L, 6, function(e, r) {});
+
+	return [
+		buffer.readInt16LE(0),
+		buffer.readInt16LE(2),
+		buffer.readInt16LE(4)
+	];
 };
 
 /**
@@ -640,7 +653,7 @@ ak8963.prototype.getMotion6 = function() {
  */
 ak8963.prototype.getCNTL = function() {
 	if (this.i2c) {
-		return this.i2c.readBit(AK8963.CNTL, AK8963.CNTL_MODE_BIT);
+		return this.i2c.readByte(AK8963.CNTL);
 	}
 	return false;
 };
@@ -658,9 +671,9 @@ ak8963.prototype.getCNTL = function() {
  * CNTL_MODE_FULL_ROM_ACCESS: 0x0F  // Fuse ROM access mode
  * @return undefined | false
  */
-ak8963.prototype.setCNTL = function(adrs) {
+ak8963.prototype.setCNTL = function(mode) {
 	if (this.i2c) {
-		return this.i2c.writeBit(AK8963.CNTL, AK8963.CNTL_MODE_BIT, adrs);
+		return this.i2c.writeBytes(AK8963.CNTL, [mode], function(){});
 	}
 	return false;
 };
@@ -764,22 +777,48 @@ LOCAL_I2C.prototype.bitMask = function(bit, length) {
   return ((1 << length) - 1) << (1 + bit - length);
 };
 
-LOCAL_I2C.prototype.readBit = function(adrs, bit, length, callback) {
-	callback = callback || function(e, r) {};
+LOCAL_I2C.prototype.readByte = function(adrs, callback) {
+	callback = callback || function() {};
 	var buf = this.readBytes(adrs, 1, callback);
 	return buf[0];
 };
 
-LOCAL_I2C.prototype.writeBits = function(adrs, bit, legnth, value, callback) {
-	callback = callback || function(e, r) {};
+/**
+ * Return the bit value, 1 or 0.
+ * @param  {number}   adrs     The address of the byte to read.
+ * @param  {number}   bit      The nth bit.
+ * @param  {Function} callback (Optional) callback
+ * @return {number}            1 or 0.
+ */
+LOCAL_I2C.prototype.readBit = function(adrs, bit, callback) {
+	var buf = this.readByte(adrs, callback);
+	return (buf >> bit) & 1;
+};
+
+/**
+ * Write a sequence of bits.  Note, this will do a read to get the existing value, then a write.
+ * @param  {number}   adrs     The address of the byte to write.
+ * @param  {number}   bit      The nth bit to start at.
+ * @param  {number}   length   The number of bits to change.
+ * @param  {number}   value    The values to change.
+ * @param  {Function} callback (Optional) callback
+ */
+LOCAL_I2C.prototype.writeBits = function(adrs, bit, length, value, callback) {
+	callback = callback || function() {};
 	var oldValue = this.readBytes(adrs, 1, callback);
-	var mask = this.bitMask(bit, legnth);
+	var mask = this.bitMask(bit, length);
 	var newValue = oldValue ^ ((oldValue ^ (value << bit)) & mask);
 	return this.writeBytes(adrs, [newValue], callback);
 };
 
+/**
+ * Write one bit.  Note, this will do a read to get the existing value, then a write.
+ * @param  {number}   adrs     The address of the byte to write.
+ * @param  {number}   bit      The nth bit.
+ * @param  {number}   value    The new value, 1 or 0.
+ * @param  {Function} callback (Optional) callback
+ */
 LOCAL_I2C.prototype.writeBit = function(adrs, bit, value, callback) {
-	callback = callback || function(e, r) {};
 	return this.writeBits(adrs, bit, 1, value, callback);
 };
 
