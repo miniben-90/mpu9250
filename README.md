@@ -37,8 +37,12 @@ var mpu = new mpu9250({
     // Enable/Disable magnetometer data (default false)
     UpMagneto: true,
 
+    // If true, all values returned will be scaled to actual units (default false).
+    // If false, the raw values from the device will be returned.
+    scaleValues: false,
+
     // Enable/Disable debug mode (default false)
-    DEBUG: true,
+    DEBUG: false,
 
     // ak8963 (magnetometer / compass) address (default is 0x0C)
     ak_address: 0x0C,

@@ -1,4 +1,5 @@
 var mpu9250 = require('./mpu9250');
+
 // Instantiate and initialize.
 var mpu = new mpu9250({
     // i2c path (default is '/dev/i2c-1')
@@ -21,15 +22,22 @@ var mpu = new mpu9250({
     //      3 => +/- 16 g
     ACCEL_FS: 2,
 
+    scaleValues: true,
+
     UpMagneto: true
 });
 
 if (mpu.initialize()) {
+
     setInterval(function() {
         var start = new Date().getTime();
         var m9 = mpu.getMotion9();
         var end = new Date().getTime();
 
-        console.log((end - start) / 1000, m9);
+        for (var i = 0; i < m9.length; i++) {
+            m9[i] = m9[i].toFixed(2);
+        }
+
+        console.log((end - start) / 1000 + '\t' + m9.toString().replace(/,/g, '\t'));
     }, 5);
 }
