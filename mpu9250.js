@@ -626,9 +626,9 @@ mpu9250.prototype.printSettings = function() {
 	this.debug.Log('INFO', '--> Device address: 0x' + this._config.address.toString(16));
 	this.debug.Log('INFO', '--> i2c bus: ' + this._config.device);
     this.debug.Log('INFO', '--> Device ID: 0x' + this.getIDDevice().toString(16));
-    this.debug.Log('INFO', '--> BYPASS enabled:', this.getByPASSEnabled() ? 'Yes' : 'No');
-	this.debug.Log('INFO', '--> SleepEnabled Mode:', this.getSleepEnabled() === 1 ? 'On' : 'Off');
-	this.debug.Log('INFO', '--> i2c Master Mode:', this.getI2CMasterMode() === 1 ? 'Enabled' : 'Disabled');
+    this.debug.Log('INFO', '--> BYPASS enabled: ' + (this.getByPASSEnabled() ? 'Yes' : 'No'));
+	this.debug.Log('INFO', '--> SleepEnabled Mode: ' + (this.getSleepEnabled() === 1 ? 'On' : 'Off'));
+	this.debug.Log('INFO', '--> i2c Master Mode: ' + (this.getI2CMasterMode() === 1 ? 'Enabled' : 'Disabled'));
     this.debug.Log('INFO', '--> Power Management (0x6B, 0x6C):');
     this.debug.Log('INFO', '    --> Clock Source: ' + CLK_RNG[this.getClockSource()]);
     this.debug.Log('INFO', '    --> Accel enabled (x, y, z): ' + vectorToYesNo(this.getAccelPowerSettings()));
@@ -647,15 +647,15 @@ function vectorToYesNo(v) {
 mpu9250.prototype.printAccelSettings = function() {
     var FS_RANGE = [ '±2g (0)', '±4g (1)', '±8g (2)', '±16g (3)' ];
 	this.debug.Log('INFO', 'Accelerometer:');
-	this.debug.Log('INFO', '--> Full Scale Range (0x1C):', FS_RANGE[this.getFullScaleAccelRange()]);
-	this.debug.Log('INFO', '--> Scalar: 1/' + 1 / this.accelScalarInv);
+	this.debug.Log('INFO', '--> Full Scale Range (0x1C): ' + FS_RANGE[this.getFullScaleAccelRange()]);
+	this.debug.Log('INFO', '--> Scalar: 1/' + (1 / this.accelScalarInv));
 };
 
 mpu9250.prototype.printGyroSettings = function() {
     var FS_RANGE = ['+250dps (0)', '+500 dps (1)', '+1000 dps (2)', '+2000 dps (3)'];
 	this.debug.Log('INFO', 'Gyroscope:');
-    this.debug.Log('INFO', '--> Full Scale Range (0x1B):', FS_RANGE[this.getFullScaleGyroRange()]);
-	this.debug.Log('INFO', '--> Scalar: 1/' + 1 / this.gyroScalarInv);
+    this.debug.Log('INFO', '--> Full Scale Range (0x1B): ' + FS_RANGE[this.getFullScaleGyroRange()]);
+	this.debug.Log('INFO', '--> Scalar: 1/' + (1 / this.gyroScalarInv));
 };
 
 
