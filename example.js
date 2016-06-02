@@ -20,7 +20,7 @@ var mpu = new mpu9250({
     //      1 => +/- 4 g
     //      2 => +/- 8 g
     //      3 => +/- 16 g
-    ACCEL_FS: 2,
+    ACCEL_FS: 0,
 
     scaleValues: true,
 
@@ -29,15 +29,17 @@ var mpu = new mpu9250({
 
 if (mpu.initialize()) {
 
+    console.log('Time\tAccel.x\tAccel.y\tAccel.z\tGyro.x\tGyro.y\tGyro.z\tMag.x\tMag.y\tMag.z\tTemp(°C)');
     setInterval(function() {
         var start = new Date().getTime();
         var m9 = mpu.getMotion9();
         var end = new Date().getTime();
 
+        // Make the numbers pretty
         for (var i = 0; i < m9.length; i++) {
             m9[i] = m9[i].toFixed(2);
         }
 
-        console.log((end - start) / 1000 + '\t' + m9.toString().replace(/,/g, '\t'));
+        console.log((end - start) / 1000 + '\t' + m9.toString().replace(/,/g, '\t') + '\t' + mpu.getTemperatureCelsiusDigital().toFixed(2));
     }, 5);
 }

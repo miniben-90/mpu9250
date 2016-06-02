@@ -701,6 +701,10 @@ ak8963.prototype.printSettings = function() {
 	this.debug.Log('INFO', '--> i2c address: 0x' + this._config.ak_address.toString(16));
 	this.debug.Log('INFO', '--> Device ID: 0x' + this.getIDDevice().toString(16));
 	this.debug.Log('INFO', '--> Mode: ' + MODE_LST[this.getCNTL() & 0x0F]);
+	this.debug.Log('INFO', '--> Scalars:');
+	this.debug.Log('INFO', '  --> x: ' + this.asax);
+	this.debug.Log('INFO', '  --> y: ' + this.asay);
+	this.debug.Log('INFO', '  --> z: ' + this.asaz);
 };
 
 /**------------------|[ FUNCTION ]|------------------**/
