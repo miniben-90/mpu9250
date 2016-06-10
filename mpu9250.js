@@ -131,7 +131,9 @@ var MPU9250 = {
 	USERCTRL_DMP_RESET_BIT: 3,
 	USERCTRL_FIFO_RESET_BIT: 2,
 	USERCTRL_I2C_MST_RESET_BIT: 1,
-	USERCTRL_SIG_COND_RESET_BIT: 0
+	USERCTRL_SIG_COND_RESET_BIT: 0,
+
+	DEFAULT_GYRO_CALIBRATION: { x: 0, y: 0, z: 0 },
 };
 
 /****************/
@@ -197,7 +199,8 @@ var mpu9250 = function(cfg) {
 		scaleValues: false,
 		ak_address: AK8963.ADDRESS,
 		GYRO_FS: 0,
-		ACCEL_FS: 2
+		ACCEL_FS: 2,
+		gyroBiasOffset: MPU9250.DEFAULT_GYRO_CALIBRATION
 	};
 
 	var config = extend({}, _default, cfg);
@@ -293,6 +296,7 @@ mpu9250.prototype.enableMagnetometer = function() {
 	return false;
 };
 
+
 /**---------------------|[ GET ]|--------------------**/
 /**
  * @name getIDDevice
@@ -347,14 +351,15 @@ mpu9250.prototype.getTemperatureCelsiusDigital = function() {
 mpu9250.prototype.getMotion6 = function() {
 	if (this.i2c) {
 		var buffer = this.i2c.readBytes(MPU9250.ACCEL_XOUT_H, 14, function() {});
+		var gCal = this._config.gyroBiasOffset;
 		return [
 			buffer.readInt16BE(0) * this.accelScalarInv,
 			buffer.readInt16BE(2) * this.accelScalarInv,
 			buffer.readInt16BE(4) * this.accelScalarInv,
 			// Skip Temperature - bytes 6:7
-			buffer.readInt16BE(8) * this.gyroScalarInv,
-			buffer.readInt16BE(10) * this.gyroScalarInv,
-			buffer.readInt16BE(12) * this.gyroScalarInv
+			buffer.readInt16BE(8) * this.gyroScalarInv + gCal.x,
+			buffer.readInt16BE(10) * this.gyroScalarInv + gCal.y,
+			buffer.readInt16BE(12) * this.gyroScalarInv + gCal.z
 		];
 	}
 	return false;
@@ -402,10 +407,11 @@ mpu9250.prototype.getAccel = function() {
 mpu9250.prototype.getGyro = function() {
 	if (this.i2c) {
 		var buffer = this.i2c.readBytes(MPU9250.GYRO_XOUT_H, 6, function() {});
+		var gCal = this._config.gyroBiasOffset;
 		return [
-			buffer.readInt16BE(0) * this.gyroScalarInv,
-			buffer.readInt16BE(2) * this.gyroScalarInv,
-			buffer.readInt16BE(4) * this.gyroScalarInv
+			buffer.readInt16BE(0) * this.gyroScalarInv + gCal.x,
+			buffer.readInt16BE(2) * this.gyroScalarInv + gCal.y,
+			buffer.readInt16BE(4) * this.gyroScalarInv + gCal.z
 		];
 	}
 	return false;
@@ -635,9 +641,9 @@ mpu9250.prototype.printSettings = function() {
 	this.debug.Log('INFO', '--> SleepEnabled Mode: ' + (this.getSleepEnabled() === 1 ? 'On' : 'Off'));
 	this.debug.Log('INFO', '--> i2c Master Mode: ' + (this.getI2CMasterMode() === 1 ? 'Enabled' : 'Disabled'));
     this.debug.Log('INFO', '--> Power Management (0x6B, 0x6C):');
-    this.debug.Log('INFO', '    --> Clock Source: ' + CLK_RNG[this.getClockSource()]);
-    this.debug.Log('INFO', '    --> Accel enabled (x, y, z): ' + vectorToYesNo(this.getAccelPowerSettings()));
-    this.debug.Log('INFO', '    --> Gyro enabled (x, y, z): ' + vectorToYesNo(this.getGyroPowerSettings()));
+    this.debug.Log('INFO', '  --> Clock Source: ' + CLK_RNG[this.getClockSource()]);
+    this.debug.Log('INFO', '  --> Accel enabled (x, y, z): ' + vectorToYesNo(this.getAccelPowerSettings()));
+    this.debug.Log('INFO', '  --> Gyro enabled (x, y, z): ' + vectorToYesNo(this.getGyroPowerSettings()));
 };
 
 function vectorToYesNo(v) {
@@ -661,6 +667,10 @@ mpu9250.prototype.printGyroSettings = function() {
 	this.debug.Log('INFO', 'Gyroscope:');
     this.debug.Log('INFO', '--> Full Scale Range (0x1B): ' + FS_RANGE[this.getFullScaleGyroRange()]);
 	this.debug.Log('INFO', '--> Scalar: 1/' + (1 / this.gyroScalarInv));
+	this.debug.Log('INFO', '--> Bias Offset:');
+	this.debug.Log('INFO', '  --> x: ' + this._config.gyroBiasOffset.x);
+	this.debug.Log('INFO', '  --> y: ' + this._config.gyroBiasOffset.y);
+	this.debug.Log('INFO', '  --> z: ' + this._config.gyroBiasOffset.z);
 };
 
 

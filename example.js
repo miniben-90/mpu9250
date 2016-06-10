@@ -2,7 +2,7 @@
 
 var mpu9250 = require('./mpu9250');
 
-// These values were generated using calibrate_mag
+// These values were generated using calibrate_mag - you will want to create your own.
 var MAG_CALIBRATION = {
     min: { x: -106.171875, y: -56.8125, z: -14.828125 },
     max: { x: 71.9609375, y: 117.17578125, z: 164.25 },
@@ -13,6 +13,15 @@ var MAG_CALIBRATION = {
         z: 1.483149376145188
     }
 };
+
+// These values were generated using calibrate_gyro - you will want to create your own.
+// NOTE: These are temperature dependent.
+var GYRO_OFFSET = {
+    x: -1.068045801526718,
+    y: -0.15665648854961847,
+    z: 1.384625954198473
+};
+
 
 // Instantiate and initialize.
 var mpu = new mpu9250({
@@ -40,7 +49,9 @@ var mpu = new mpu9250({
 
     UpMagneto: true,
 
-    magCalibration: MAG_CALIBRATION
+    magCalibration: MAG_CALIBRATION,
+
+    gyroBiasOffset: GYRO_OFFSET
 });
 
 if (mpu.initialize()) {
