@@ -1,4 +1,18 @@
+'use strict';
+
 var mpu9250 = require('./mpu9250');
+
+// These values were generated using calibrate_mag
+var MAG_CALIBRATION = {
+    min: { x: -106.171875, y: -56.8125, z: -14.828125 },
+    max: { x: 71.9609375, y: 117.17578125, z: 164.25 },
+    offset: { x: -17.10546875, y: 30.181640625, z: 74.7109375 },
+    scale: {
+        x: 1.491020130696022,
+        y: 1.5265373476123123,
+        z: 1.483149376145188
+    }
+};
 
 // Instantiate and initialize.
 var mpu = new mpu9250({
@@ -24,22 +38,46 @@ var mpu = new mpu9250({
 
     scaleValues: true,
 
-    UpMagneto: true
+    UpMagneto: true,
+
+    magCalibration: MAG_CALIBRATION
 });
 
 if (mpu.initialize()) {
 
-    console.log('Time\tAccel.x\tAccel.y\tAccel.z\tGyro.x\tGyro.y\tGyro.z\tMag.x\tMag.y\tMag.z\tTemp(°C)');
+    console.log('\n   Time     Accel.x  Accel.y  Accel.z  Gyro.x   Gyro.y   Gyro.z   Mag.x   Mag.y   Mag.z    Temp(°C) heading(°)');
     setInterval(function() {
         var start = new Date().getTime();
         var m9 = mpu.getMotion9();
         var end = new Date().getTime();
+        var t = (end - start) / 1000;
 
         // Make the numbers pretty
+        var str = '';
         for (var i = 0; i < m9.length; i++) {
-            m9[i] = m9[i].toFixed(2);
+            str += p(m9[i]);
         }
 
-        console.log((end - start) / 1000 + '\t' + m9.toString().replace(/,/g, '\t') + '\t' + mpu.getTemperatureCelsiusDigital().toFixed(2));
+        process.stdout.write(p(t) + str + p(mpu.getTemperatureCelsiusDigital()) + p(calcHeading(m9[6], m9[7])) + '\r');
     }, 5);
+}
+
+function p(num) {
+    var str = num.toFixed(3);
+    while (str.length <= 7) {
+        str = ' ' + str;
+    }
+    return str + ' ';
+}
+
+function calcHeading(x, y) {
+    var heading = Math.atan2(y, x) * 180 / Math.PI;
+
+    if (heading < -180) {
+        heading += 360;
+    } else if (heading > 180) {
+        heading -= 360;
+    }
+
+    return heading;
 }

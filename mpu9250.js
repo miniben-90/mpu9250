@@ -165,7 +165,12 @@ var AK8963 = {
 	CNTL_MODE_CONTINUE_MESURE_2: 0x06, // Continuous measurement mode 2
 	CNTL_MODE_EXT_TRIG_MESURE: 0x04, // External trigger measurement mode
 	CNTL_MODE_SELF_TEST_MODE: 0x08, // Self-test mode
-	CNTL_MODE_FULL_ROM_ACCESS: 0x0F  // Fuse ROM access mode
+	CNTL_MODE_FULL_ROM_ACCESS: 0x0F,  // Fuse ROM access mode
+
+    DEFAULT_CALIBRATION: {
+        offset: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+	}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -670,6 +675,7 @@ var ak8963 = function(config, callback) {
 	this._config = config;
 	this.debug = new debugConsole(config.DEBUG);
 	this._config.ak_address = this._config.ak_address || AK8963.ADDRESS;
+	this._config.magCalibration = this._config.magCalibration || AK8963.DEFAULT_CALIBRATION;
 
 	// connection with magnetometer
 	this.i2c = new LOCAL_I2C(this._config.ak_address, {device: this._config.device});
@@ -764,11 +770,12 @@ ak8963.prototype.getMagAttitude = function() {
 
 	// Get the actual data
 	var buffer = this.i2c.readBytes(AK8963.XOUT_L, 6, function(e, r) {});
+	var cal = this._config.magCalibration;
 
 	return [
-		buffer.readInt16LE(0) * this.asax,
-		buffer.readInt16LE(2) * this.asay,
-		buffer.readInt16LE(4) * this.asaz
+		((buffer.readInt16LE(0) * this.asax) - cal.offset.x) * cal.scale.x,
+		((buffer.readInt16LE(2) * this.asay) - cal.offset.y) * cal.scale.y,
+		((buffer.readInt16LE(4) * this.asaz) - cal.offset.z) * cal.scale.z
 	];
 };
 
