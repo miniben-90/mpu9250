@@ -1,6 +1,6 @@
 {
   "name": "mpu9250",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Simple reading Data from mpu9250 with node.js and i2c package.",
   "main": "mpu9250.js",
   "scripts": {
@@ -16,7 +16,7 @@
   "keywords": [
     "mpu9250"
   ],
-  "Dependencies": {
+  "dependencies": {
     "i2c": ">=0.2.1",
     "extend": ">=3.0.0",
     "sleep": ">=3.0.0"
