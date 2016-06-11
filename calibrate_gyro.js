@@ -25,9 +25,6 @@ var mpu = new mpu9250({
 
 function gyroBiasCalibrationSync() {
 
-	// Reset the calibration
-	mpu._config.gyroBiasCalibration = { x: 0, y: 0, z: 0 };
-
 	var avg = {
 		x: 0,
 		y: 0,

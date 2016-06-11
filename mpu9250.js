@@ -133,7 +133,15 @@ var MPU9250 = {
 	USERCTRL_I2C_MST_RESET_BIT: 1,
 	USERCTRL_SIG_COND_RESET_BIT: 0,
 
-	DEFAULT_GYRO_CALIBRATION: { x: 0, y: 0, z: 0 },
+	DEFAULT_GYRO_OFFSET: { x: 0, y: 0, z: 0 },
+	DEFAULT_ACCEL_CALIBRATION: {
+		offset: {x: 0, y: 0, z: 0},
+		scale: {
+			x: [-1, 1],
+			y: [-1, 1],
+			z: [-1, 1]
+		}
+	}
 };
 
 /****************/
@@ -200,7 +208,8 @@ var mpu9250 = function(cfg) {
 		ak_address: AK8963.ADDRESS,
 		GYRO_FS: 0,
 		ACCEL_FS: 2,
-		gyroBiasOffset: MPU9250.DEFAULT_GYRO_CALIBRATION
+		gyroBiasOffset: MPU9250.DEFAULT_GYRO_OFFSET,
+		accelCalibration: MPU9250.DEFAULT_ACCEL_CALIBRATION
 	};
 
 	var config = extend({}, _default, cfg);
@@ -352,10 +361,16 @@ mpu9250.prototype.getMotion6 = function() {
 	if (this.i2c) {
 		var buffer = this.i2c.readBytes(MPU9250.ACCEL_XOUT_H, 14, function() {});
 		var gCal = this._config.gyroBiasOffset;
+		var aCal = this._config.accelCalibration;
+
+		var xAccel = buffer.readInt16BE(0) * this.accelScalarInv;
+		var yAccel = buffer.readInt16BE(2) * this.accelScalarInv;
+		var zAccel = buffer.readInt16BE(4) * this.accelScalarInv;
+
 		return [
-			buffer.readInt16BE(0) * this.accelScalarInv,
-			buffer.readInt16BE(2) * this.accelScalarInv,
-			buffer.readInt16BE(4) * this.accelScalarInv,
+			scaleAccel(xAccel, aCal.offset.x, aCal.scale.x),
+			scaleAccel(yAccel, aCal.offset.y, aCal.scale.y),
+			scaleAccel(zAccel, aCal.offset.z, aCal.scale.z),
 			// Skip Temperature - bytes 6:7
 			buffer.readInt16BE(8) * this.gyroScalarInv + gCal.x,
 			buffer.readInt16BE(10) * this.gyroScalarInv + gCal.y,
@@ -364,6 +379,18 @@ mpu9250.prototype.getMotion6 = function() {
 	}
 	return false;
 };
+
+/**
+ * This wee function just simplifies the code.  It scales the Accelerometer values appropriately.
+ * The values are scaled to 1g and the offset it taken into account.
+ */
+function scaleAccel(val, offset, scalerArr) {
+	if (val < 0) {
+		return -(val - offset) / (scalerArr[0] - offset);
+	} else {
+		return (val - offset) / (scalerArr[1] - offset);
+	}
+}
 
 /**
  * @name getMotion9
@@ -391,10 +418,16 @@ mpu9250.prototype.getMotion9 = function() {
 mpu9250.prototype.getAccel = function() {
 	if (this.i2c) {
 		var buffer = this.i2c.readBytes(MPU9250.ACCEL_XOUT_H, 6, function() {});
+		var aCal = this._config.accelCalibration;
+
+		var xAccel = buffer.readInt16BE(0) * this.accelScalarInv;
+		var yAccel = buffer.readInt16BE(2) * this.accelScalarInv;
+		var zAccel = buffer.readInt16BE(4) * this.accelScalarInv;
+
 		return [
-			buffer.readInt16BE(0) * this.accelScalarInv,
-			buffer.readInt16BE(2) * this.accelScalarInv,
-			buffer.readInt16BE(4) * this.accelScalarInv
+			scaleAccel(xAccel, aCal.offset.x, aCal.scale.x),
+			scaleAccel(yAccel, aCal.offset.y, aCal.scale.y),
+			scaleAccel(zAccel, aCal.offset.z, aCal.scale.z)
 		];
 	}
 	return false;
@@ -660,6 +693,15 @@ mpu9250.prototype.printAccelSettings = function() {
 	this.debug.Log('INFO', 'Accelerometer:');
 	this.debug.Log('INFO', '--> Full Scale Range (0x1C): ' + FS_RANGE[this.getFullScaleAccelRange()]);
 	this.debug.Log('INFO', '--> Scalar: 1/' + (1 / this.accelScalarInv));
+	this.debug.Log('INFO', '--> Calibration:');
+	this.debug.Log('INFO', '  --> Offset: ');
+	this.debug.Log('INFO', '    --> x: ' + this._config.accelCalibration.offset.x);
+	this.debug.Log('INFO', '    --> y: ' + this._config.accelCalibration.offset.y);
+	this.debug.Log('INFO', '    --> z: ' + this._config.accelCalibration.offset.z);
+	this.debug.Log('INFO', '  --> Scale: ');
+	this.debug.Log('INFO', '    --> x: ' + this._config.accelCalibration.scale.x);
+	this.debug.Log('INFO', '    --> y: ' + this._config.accelCalibration.scale.y);
+	this.debug.Log('INFO', '    --> z: ' + this._config.accelCalibration.scale.z);
 };
 
 mpu9250.prototype.printGyroSettings = function() {
