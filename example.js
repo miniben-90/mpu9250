@@ -164,37 +164,24 @@ function Stats(vectorNames, numStats) {
 Stats.prototype.add = function(vectorName, x, y, z) {
     var v = this.vectors[vectorName];
     var len = v.x.length;
-    if (len < this.numStats) {
-        v.x.push(x);
-        v.y.push(y);
-        v.z.push(z);
-        v.pos = len;
+    if (v.pos >= this.numStats) {
+        v.pos = 0;
     } else {
-        if (v.pos >= len) {
-            v.pos = 0;
-        } else {
-            v.pos += 1;
-        }
-        v.x[v.pos] = x;
-        v.y[v.pos] = y;
-        v.z[v.pos] = z;
+        v.pos += 1;
     }
+    v.x[v.pos] = x;
+    v.y[v.pos] = y;
+    v.z[v.pos] = z;
 };
 Stats.prototype.addValue = function(vectorName, x) {
     var v = this.vectors[vectorName];
     v.isValue = true;
-    var len = v.x.length;
-    if (len < this.numStats) {
-        v.x.push(x);
-        v.pos = len;
+    if (v.pos >= this.numStats) {
+        v.pos = 0;
     } else {
-        if (v.pos >= len) {
-            v.pos = 0;
-        } else {
-            v.pos += 1;
-        }
-        v.x[v.pos] = x;
+        v.pos += 1;
     }
+    v.x[v.pos] = x;
 };
 Stats.prototype.printStats = function () {
     if (this.done) return;
