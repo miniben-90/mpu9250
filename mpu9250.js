@@ -48,6 +48,11 @@ var sleep = require('sleep');
 /*****************/
 /** MPU9250 MAP **/
 /*****************/
+// documentation:
+//   https://www.invensense.com/products/motion-tracking/9-axis/mpu-9250/
+//   https://www.invensense.com/wp-content/uploads/2015/02/MPU-9250-Datasheet.pdf
+//   https://www.invensense.com/wp-content/uploads/2015/02/MPU-9250-Register-Map.pdf
+
 var MPU9250 = {
 	I2C_ADDRESS_AD0_LOW: 0x68,
 	I2C_ADDRESS_AD0_HIGH: 0x69,
@@ -147,9 +152,11 @@ var MPU9250 = {
 /****************/
 /** AK8963 MAP **/
 /****************/
+// Technical documentation available here: https://www.akm.com/akm/en/file/datasheet/AK8963C.pdf
 var AK8963 = {
 	ADDRESS: 0x0C,
-	WHO_AM_I: 0x00, // should return 0x48
+	WHO_AM_I: 0x00, // should return 0x48,
+	WHO_AM_I_RESPONSE: 0x48,
 	INFO: 0x01,
 	ST1: 0x02,  // data ready status bit 0
 	XOUT_L: 0x03,  // data
@@ -170,12 +177,12 @@ var AK8963 = {
 	ST1_DOR_BIT: 1,
 
 	CNTL_MODE_OFF: 0x00, // Power-down mode
-	CNTL_MODE_SINGLE_MESURE: 0x01, // Single measurement mode
-	CNTL_MODE_CONTINUE_MESURE_1: 0x02, // Continuous measurement mode 1
-	CNTL_MODE_CONTINUE_MESURE_2: 0x06, // Continuous measurement mode 2
-	CNTL_MODE_EXT_TRIG_MESURE: 0x04, // External trigger measurement mode
+	CNTL_MODE_SINGLE_MEASURE: 0x01, // Single measurement mode
+	CNTL_MODE_CONTINUE_MEASURE_1: 0x02, // Continuous measurement mode 1 - Sensor is measured periodically at 8Hz
+	CNTL_MODE_CONTINUE_MEASURE_2: 0x06, // Continuous measurement mode 2 - Sensor is measured periodically at 100Hz
+	CNTL_MODE_EXT_TRIG_MEASURE: 0x04, // External trigger measurement mode
 	CNTL_MODE_SELF_TEST_MODE: 0x08, // Self-test mode
-	CNTL_MODE_FULL_ROM_ACCESS: 0x0F,  // Fuse ROM access mode
+	CNTL_MODE_FUSE_ROM_ACCESS: 0x0F,  // Fuse ROM access mode
 
     DEFAULT_CALIBRATION: {
         offset: { x: 0, y: 0, z: 0 },
@@ -734,12 +741,12 @@ var ak8963 = function(config, callback) {
 	sleep.usleep(10000);
 	var buffer = this.getIDDevice();
 
-	if (buffer & 0x48) {
-		this.setCNTL(AK8963.CNTL_MODE_CONTINUE_MESURE_2);
-		sleep.usleep(10000);
+	if (buffer & AK8963.WHO_AM_I_RESPONSE) {
 		this.getSensitivityAdjustmentValues();
+		sleep.usleep(10000);
+		this.setCNTL(AK8963.CNTL_MODE_CONTINUE_MEASURE_2);
 	} else {
-		this.debug.Log('ERROR', 'AK8963: Device ID is not equal to 0x48, device value is 0x' + buffer.toString(16));
+		this.debug.Log('ERROR', 'AK8963: Device ID is not equal to 0x' + AK8963.WHO_AM_I_RESPONSE.toString(16) + ', device value is 0x' + buffer.toString(16));
 	}
 	callback(true);
 };
@@ -748,8 +755,8 @@ ak8963.prototype.printSettings = function() {
 	var MODE_LST = {
 		0: '0x00 (Power-down mode)',
 		1: '0x01 (Single measurement mode)',
-		2: '0x02 (Continuous measurement mode 1)',
-		6: '0x06 (Continuous measurement mode 2)',
+		2: '0x02 (Continuous measurement mode 1: 8Hz)',
+		6: '0x06 (Continuous measurement mode 2: 100Hz)',
 		4: '0x04 (External trigger measurement mode)',
 		8: '0x08 (Self-test mode)',
 		15: '0x0F (Fuse ROM access mode)'
@@ -799,15 +806,27 @@ ak8963.prototype.getIDDevice = function() {
  * @name getSensitivityAdjustmentValues
  */
 ak8963.prototype.getSensitivityAdjustmentValues = function () {
-	if (this._config.scaleValues) {
-		this.asax = ((this.i2c.readByte(AK8963.ASAX) - 128) * 0.5 / 128 + 1);
-		this.asay = ((this.i2c.readByte(AK8963.ASAY) - 128) * 0.5 / 128 + 1);
-		this.asaz = ((this.i2c.readByte(AK8963.ASAZ) - 128) * 0.5 / 128 + 1);
-	} else {
+
+	if (!this._config.scaleValues) {
 		this.asax = 1;
 		this.asay = 1;
 		this.asaz = 1;
+		return;
 	}
+
+	// Need to set to Fuse mode to get valid values from this.
+	var currentMode = this.getCNTL();
+	this.setCNTL(AK8963.CNTL_MODE_FUSE_ROM_ACCESS);
+	sleep.usleep(10000);
+
+	// Get the ASA* values
+	this.asax = ((this.i2c.readByte(AK8963.ASAX) - 128) * 0.5 / 128 + 1);
+	this.asay = ((this.i2c.readByte(AK8963.ASAY) - 128) * 0.5 / 128 + 1);
+	this.asaz = ((this.i2c.readByte(AK8963.ASAZ) - 128) * 0.5 / 128 + 1);
+
+	// Return the mode we were in before
+	this.setCNTL(currentMode);
+
 };
 
 /**
@@ -817,12 +836,18 @@ ak8963.prototype.getSensitivityAdjustmentValues = function () {
  */
 ak8963.prototype.getMagAttitude = function() {
 
-	// We need to do this to be able to trigger the next update
-	this.i2c.readByte(AK8963.ST2);
-
 	// Get the actual data
 	var buffer = this.i2c.readBytes(AK8963.XOUT_L, 6, function(e, r) {});
 	var cal = this._config.magCalibration;
+
+	// For some reason when we read ST2 (Status 2) just after reading byte, this ensures the
+	// next reading is fresh.  If we do it before without a pause, only 1 in 15 readings will
+	// be fresh.  The setTimeout ensures this read goes to the back of the queue, once all other
+	// computation is done.
+	var self = this;
+	setTimeout(function () {
+		self.i2c.readByte(AK8963.ST2);
+	}, 0);
 
 	return [
 		((buffer.readInt16LE(0) * this.asax) - cal.offset.x) * cal.scale.x,
@@ -847,12 +872,12 @@ ak8963.prototype.getCNTL = function() {
 /**
  * @name setCNTL
  * CNTL_MODE_OFF: 0x00, // Power-down mode
- * CNTL_MODE_SINGLE_MESURE: 0x01, // Single measurement mode
- * CNTL_MODE_CONTINUE_MESURE_1: 0x02, // Continuous measurement mode 1
- * CNTL_MODE_CONTINUE_MESURE_2: 0x06, // Continuous measurement mode 2
- * CNTL_MODE_EXT_TRIG_MESURE: 0x04, // External trigger measurement mode
+ * CNTL_MODE_SINGLE_MEASURE: 0x01, // Single measurement mode
+ * CNTL_MODE_CONTINUE_MEASURE_1: 0x02, // Continuous measurement mode 1
+ * CNTL_MODE_CONTINUE_MEASURE_2: 0x06, // Continuous measurement mode 2
+ * CNTL_MODE_EXT_TRIG_MEASURE: 0x04, // External trigger measurement mode
  * CNTL_MODE_SELF_TEST_MODE: 0x08, // Self-test mode
- * CNTL_MODE_FULL_ROM_ACCESS: 0x0F  // Fuse ROM access mode
+ * CNTL_MODE_FUSE_ROM_ACCESS: 0x0F  // Fuse ROM access mode
  * @return undefined | false
  */
 ak8963.prototype.setCNTL = function(mode) {

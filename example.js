@@ -78,9 +78,19 @@ if (mpu.initialize()) {
     var stats = new Stats([ACCEL_NAME, GYRO_NAME, MAG_NAME, HEADING_NAME], 1000);
 
     console.log('\n   Time     Accel.x  Accel.y  Accel.z  Gyro.x   Gyro.y   Gyro.z   Mag.x   Mag.y   Mag.z    Temp(°C) heading(°)');
+    var cnt = 0;
+    var lastMag = [0, 0, 0];
     setInterval(function() {
         var start = new Date().getTime();
-        var m9 = mpu.getMotion9();
+        var m9;
+        // Only get the magnetometer values every 100Hz
+        var getMag = cnt++ % 2;
+        if (getMag) {
+            m9 = mpu.getMotion6().concat(lastMag);
+        } else {
+            m9 = mpu.getMotion9();
+            lastMag = [m9[6], m9[7], m9[8]];
+        }
         var end = new Date().getTime();
         var t = (end - start) / 1000;
 
@@ -91,14 +101,19 @@ if (mpu.initialize()) {
         }
         stats.add(ACCEL_NAME, m9[0], m9[1], m9[2]);
         stats.add(GYRO_NAME, m9[3], m9[4], m9[5]);
-        stats.add(MAG_NAME, m9[6], m9[7], m9[8]);
-        stats.addValue(HEADING_NAME, calcHeading(m9[6], m9[7]));
+        if (getMag) {
+            stats.add(MAG_NAME, m9[6], m9[7], m9[8]);
+            stats.addValue(HEADING_NAME, calcHeading(m9[6], m9[7]));
+        }
 
-        process.stdout.write(p(t) + str + p(mpu.getTemperatureCelsiusDigital()) + p(calcHeading(m9[6], m9[7])) + '\r');
+        process.stdout.write(p(t) + str + p(mpu.getTemperatureCelsiusDigital()) + p(calcHeading(m9[6], m9[7])) + '  \r');
     }, 5);
 }
 
 function p(num) {
+    if (num === undefined) {
+        return '       ';
+    }
     var str = num.toFixed(3);
     while (str.length <= 7) {
         str = ' ' + str;
@@ -188,15 +203,15 @@ Stats.prototype.printStats = function () {
     this.done = true;
 
     console.log('\n\n\nStatistics:');
-    console.log('           average   std. dev.');
+    console.log('           average   std.dev.  num.same.values');
     for (var i = 0; i < this.vectorNames.length; i += 1) {
         var name = this.vectorNames[i];
         var v = this.vectors[name];
         console.log(name + ':');
-        console.log(' -> x: ', average(v.x).toFixed(5), standardDeviation(v.x).toFixed(5));
+        console.log(' -> x: ', average(v.x).toFixed(5), standardDeviation(v.x).toFixed(5), numSameValues(v.x));
         if (!v.isValue) {
-            console.log(' -> y: ', average(v.y).toFixed(5), standardDeviation(v.y).toFixed(5));
-            console.log(' -> z: ', average(v.z).toFixed(5), standardDeviation(v.z).toFixed(5));
+            console.log(' -> y: ', average(v.y).toFixed(5), standardDeviation(v.y).toFixed(5), numSameValues(v.y));
+            console.log(' -> z: ', average(v.z).toFixed(5), standardDeviation(v.z).toFixed(5), numSameValues(v.z));
         }
         console.log(' -> num samples: ', v.x.length);
         console.log();
@@ -224,5 +239,17 @@ Stats.prototype.printStats = function () {
 
         var avg = sumData / values.length;
         return avg;
+    }
+
+    function numSameValues(values) {
+        var same = 0;
+        var lastVal = NaN;
+        values.forEach(function(val) {
+            if (val === lastVal) {
+                same += 1;
+            }
+            lastVal = val;
+        });
+        return same;
     }
 };
