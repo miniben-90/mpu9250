@@ -71,10 +71,26 @@ var mpu = new mpu9250({
 
 if (mpu.initialize()) {
 
+    var ACCEL_NAME = 'Accel (g)';
+    var GYRO_NAME = 'Gyro (°/sec)';
+    var MAG_NAME = 'Mag (uT)';
+    var HEADING_NAME = 'Heading (°)';
+    var stats = new Stats([ACCEL_NAME, GYRO_NAME, MAG_NAME, HEADING_NAME], 1000);
+
     console.log('\n   Time     Accel.x  Accel.y  Accel.z  Gyro.x   Gyro.y   Gyro.z   Mag.x   Mag.y   Mag.z    Temp(°C) heading(°)');
+    var cnt = 0;
+    var lastMag = [0, 0, 0];
     setInterval(function() {
         var start = new Date().getTime();
-        var m9 = mpu.getMotion9();
+        var m9;
+        // Only get the magnetometer values every 100Hz
+        var getMag = cnt++ % 2;
+        if (getMag) {
+            m9 = mpu.getMotion6().concat(lastMag);
+        } else {
+            m9 = mpu.getMotion9();
+            lastMag = [m9[6], m9[7], m9[8]];
+        }
         var end = new Date().getTime();
         var t = (end - start) / 1000;
 
@@ -83,12 +99,21 @@ if (mpu.initialize()) {
         for (var i = 0; i < m9.length; i++) {
             str += p(m9[i]);
         }
+        stats.add(ACCEL_NAME, m9[0], m9[1], m9[2]);
+        stats.add(GYRO_NAME, m9[3], m9[4], m9[5]);
+        if (getMag) {
+            stats.add(MAG_NAME, m9[6], m9[7], m9[8]);
+            stats.addValue(HEADING_NAME, calcHeading(m9[6], m9[7]));
+        }
 
-        process.stdout.write(p(t) + str + p(mpu.getTemperatureCelsiusDigital()) + p(calcHeading(m9[6], m9[7])) + '\r');
+        process.stdout.write(p(t) + str + p(mpu.getTemperatureCelsiusDigital()) + p(calcHeading(m9[6], m9[7])) + '  \r');
     }, 5);
 }
 
 function p(num) {
+    if (num === undefined) {
+        return '       ';
+    }
     var str = num.toFixed(3);
     while (str.length <= 7) {
         str = ' ' + str;
@@ -107,3 +132,124 @@ function calcHeading(x, y) {
 
     return heading;
 }
+
+
+/**
+ * Calculate Statistics
+ * @param {[string]} names The names of the vectors.
+ */
+function Stats(vectorNames, numStats) {
+
+    this.vectorNames = vectorNames;
+    this.numStats = numStats;
+    this.vectors = {};
+    this.done = false;
+
+    for (var i = 0; i < vectorNames.length; i += 1) {
+        var name = vectorNames[i];
+        this.vectors[name] = {
+            x: [],
+            y: [],
+            z: [],
+            pos: 0
+        };
+    }
+
+    function exitHandler(options, err) {
+        if (err) {
+            console.log(err.stack);
+        } else {
+            this.printStats();
+        }
+        if (options.exit) {
+            var exit = process.exit;
+            exit();
+        }
+    }
+
+    // do something when app is closing
+    process.on('exit', exitHandler.bind(this, {cleanup: true}));
+
+    // catches ctrl+c event
+    process.on('SIGINT', exitHandler.bind(this, {exit: true}));
+
+    // catches uncaught exceptions
+    process.on('uncaughtException', exitHandler.bind(this, {exit: true}));
+}
+Stats.prototype.add = function(vectorName, x, y, z) {
+    var v = this.vectors[vectorName];
+    var len = v.x.length;
+    if (v.pos >= this.numStats) {
+        v.pos = 0;
+    } else {
+        v.pos += 1;
+    }
+    v.x[v.pos] = x;
+    v.y[v.pos] = y;
+    v.z[v.pos] = z;
+};
+Stats.prototype.addValue = function(vectorName, x) {
+    var v = this.vectors[vectorName];
+    v.isValue = true;
+    if (v.pos >= this.numStats) {
+        v.pos = 0;
+    } else {
+        v.pos += 1;
+    }
+    v.x[v.pos] = x;
+};
+Stats.prototype.printStats = function () {
+    if (this.done) return;
+    this.done = true;
+
+    console.log('\n\n\nStatistics:');
+    console.log('           average   std.dev.  num.same.values');
+    for (var i = 0; i < this.vectorNames.length; i += 1) {
+        var name = this.vectorNames[i];
+        var v = this.vectors[name];
+        console.log(name + ':');
+        console.log(' -> x: ', average(v.x).toFixed(5), standardDeviation(v.x).toFixed(5), numSameValues(v.x));
+        if (!v.isValue) {
+            console.log(' -> y: ', average(v.y).toFixed(5), standardDeviation(v.y).toFixed(5), numSameValues(v.y));
+            console.log(' -> z: ', average(v.z).toFixed(5), standardDeviation(v.z).toFixed(5), numSameValues(v.z));
+        }
+        console.log(' -> num samples: ', v.x.length);
+        console.log();
+    }
+
+    function standardDeviation(values) {
+        var avg = average(values);
+
+        var squareDiffs = values.map(function (value) {
+            var diff = value - avg;
+            var sqrDiff = diff * diff;
+            return sqrDiff;
+        });
+
+        var avgSquareDiff = average(squareDiffs);
+
+        var stdDev = Math.sqrt(avgSquareDiff);
+        return stdDev;
+    }
+
+    function average(values) {
+        var sumData = values.reduce(function (sum, value) {
+            return sum + value;
+        }, 0);
+
+        var avg = sumData / values.length;
+        return avg;
+    }
+
+    function numSameValues(values) {
+        var same = 0;
+        var lastVal = NaN;
+        values.forEach(function(val) {
+            if (val === lastVal) {
+                same += 1;
+            }
+            lastVal = val;
+        });
+        return same;
+    }
+};
