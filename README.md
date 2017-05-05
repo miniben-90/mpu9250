@@ -5,7 +5,7 @@ ___
 ## Dependencies
 |   Lib.  | Version |
 | ------- | ------- |
-|     i2c |   0.2.1 |
+|     i2c |   0.2.3 |
 |  extend |   3.0.0 |
 |   sleep |   3.0.0 |
 ___
