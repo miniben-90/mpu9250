@@ -1,28 +1,28 @@
 {
-    "name": "mpu9250",
-    "version": "0.1.8",
-    "description": "Simple reading Data from mpu9250 with node.js and i2c package.",
-    "main": "mpu9250.js",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/miniben-90/mpu9250.git"
-    },
-    "bugs": {
-        "url": "https://github.com/miniben-90/mpu9250/issues"
-    },
-    "keywords": [
-        "mpu9250"
-    ],
-    "dependencies": {
-        "extend": "3.0.0",
-        "geomagnetism": "0.0.2",
-        "i2c": "0.2.3",
-        "sleep": "3.0.0"
-    },
-    "author": "BENKHADRA Hocine",
-    "license": "MIT",
-    "homepage": "https://github.com/miniben-90/mpu9250"
+  "name": "mpu9250",
+  "version": "0.1.9",
+  "description": "Simple reading Data from mpu9250 with node.js and i2c package.",
+  "main": "mpu9250.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/miniben-90/mpu9250.git"
+  },
+  "bugs": {
+    "url": "https://github.com/miniben-90/mpu9250/issues"
+  },
+  "keywords": [
+    "mpu9250"
+  ],
+  "dependencies": {
+    "extend": "3.0.0",
+    "geomagnetism": "0.0.2",
+    "i2c": "0.2.3",
+    "sleep": "3.0.0"
+  },
+  "author": "BENKHADRA Hocine",
+  "license": "MIT",
+  "homepage": "https://github.com/miniben-90/mpu9250"
 }
