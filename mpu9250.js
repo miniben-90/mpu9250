@@ -3,7 +3,7 @@
  * NodeJs Module : MPU9250
  * @author BENKHADRA Hocine
  * @description Simple reading data for node js and mpu9250
- * @version 0.1.9
+ * @version 0.2.0
  * @dependent i2c, extend, sleep
  * @license MIT
  *
