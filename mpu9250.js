@@ -3,6 +3,7 @@
  * NodeJs Module : MPU9250
  * @author BENKHADRA Hocine
  * @description Simple reading data for node js and mpu9250
+ * @version 0.1.9
  * @dependent i2c, extend, sleep
  * @license MIT
  *
@@ -232,7 +233,7 @@ mpu9250.prototype.initialize = function() {
 	this.debug.Log('INFO', 'Initialization MPU9250 ....');
 
 	// clear configuration
-	this.i2c.writeBit(MPU9250.PWR_MGMT_1, MPU9250.PWR1_DEVICE_RESET_BIT, 1);
+	this.i2c.writeBit(MPU9250.RA_PWR_MGMT_1, MPU9250.PWR1_DEVICE_RESET_BIT, 1);
 	this.debug.Log('INFO', 'Reset configuration MPU9250.');
 	sleep.usleep(10000);
 
