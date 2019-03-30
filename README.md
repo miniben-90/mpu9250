@@ -6,7 +6,7 @@ ___
 |   Lib.  | Version |
 | ------- | ------- |
 |     i2c |   0.2.3 |
-|  extend |   3.0.0 |
+|  extend |   3.0.2 |
 |   sleep |   3.0.0 |
 ___
 ## Install

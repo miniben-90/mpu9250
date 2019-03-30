@@ -17,7 +17,7 @@
     "mpu9250"
   ],
   "dependencies": {
-    "extend": "3.0.0",
+    "extend": "3.0.2",
     "geomagnetism": "0.0.2",
     "i2c": "0.2.3",
     "sleep": "3.0.0"
