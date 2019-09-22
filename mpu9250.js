@@ -4,7 +4,7 @@
  * @author BENKHADRA Hocine
  * @description Simple reading data for node js and mpu9250
  * @version 0.2.0
- * @dependent i2c, extend, sleep
+ * @dependent @abandonware/i2c, extend, sleep
  * @license MIT
  *
  */
@@ -41,7 +41,7 @@
 /*********************/
 /** Module required **/
 /*********************/
-var MOD_I2C = require('i2c');
+var MOD_I2C = require('@abandonware/i2c');
 var extend = require('extend');
 var sleep = require('sleep');
 
@@ -54,6 +54,10 @@ var sleep = require('sleep');
 //   https://www.invensense.com/wp-content/uploads/2015/02/MPU-9250-Register-Map.pdf
 
 var MPU9250 = {
+
+	ID_MPU_9250: 0x71,
+	ID_MPU_9255: 0x73,
+
 	I2C_ADDRESS_AD0_LOW: 0x68,
 	I2C_ADDRESS_AD0_HIGH: 0x69,
 	WHO_AM_I: 0x75,
@@ -286,7 +290,8 @@ mpu9250.prototype.initialize = function() {
  * @return boolean
  */
 mpu9250.prototype.testDevice = function() {
-	return (this.getIDDevice() === 0x71);
+	var currentDeviceID = this.getIDDevice();
+	return ( currentDeviceID === MPU9250.ID_MPU_9250 || currentDeviceID === MPU9250.ID_MPU_9255 );
 };
 
 /**
