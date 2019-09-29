@@ -1,6 +1,6 @@
 {
   "name": "mpu9250",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Simple reading Data from mpu9250 with node.js and i2c package.",
   "main": "mpu9250.js",
   "scripts": {
@@ -19,7 +19,7 @@
   "dependencies": {
     "extend": "3.0.2",
     "geomagnetism": "0.0.2",
-    "i2c": "0.2.3",
+    "@abandonware/i2c": "0.2.4-0",
     "sleep": "3.0.0"
   },
   "author": "BENKHADRA Hocine",

@@ -1,14 +1,19 @@
 # mpu9250
 A node.js library for communicating with the MPU9250.
 Based initially on the mpu6050 library (https://github.com/jstapels/mpu6050) by Jason Stapels.
+
 ___
+
 ## Dependencies
 |   Lib.  | Version |
 | ------- | ------- |
-|     i2c |   0.2.3 |
+|  @abandonware/i2c |   0.2.4-0 |
 |  extend |   3.0.2 |
 |   sleep |   3.0.0 |
+|   geomagnetism |   0.0.2 |
+
 ___
+
 ## Install
 ```
 npm install mpu9250
