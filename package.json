@@ -17,9 +17,9 @@
     "mpu9250"
   ],
   "dependencies": {
+    "@abandonware/i2c": "0.2.4-0",
     "extend": "3.0.2",
     "geomagnetism": "0.0.2",
-    "@abandonware/i2c": "0.2.4-0",
     "sleep": "3.0.0"
   },
   "author": "BENKHADRA Hocine",
