@@ -3,7 +3,7 @@
  * NodeJs Module : MPU9250
  * @author BENKHADRA Hocine
  * @description Simple reading data for node js and mpu9250
- * @version 0.2.2
+ * @version 0.2.4
  * @dependent @abandonware/i2c, extend, sleep
  * @license MIT
  *
@@ -762,14 +762,13 @@ mpu9250.prototype.setAccelDLPFConfig = function (a_dlpf_cfg) {
  */
 mpu9250.prototype.setSampleRate = function (sample_rate) {
   if (this.i2c) {
-    if (sample_rate < MPU9250.SAMPLERATE_MAX && rate >= 8000) {
+    if (sample_rate < MPU9250.SAMPLERATE_MAX && sample_rate >= 8000) {
       sample_rate = 8000;
     }
     if (sample_rate < 8000 && sample_rate > 1000) {
       sample_rate = 1000;
     }
     if (sample_rate < 1000) {
-      var rate = (1000 / sample_rate) - 1;
       sample_rate = 1000 / (1 + sample_rate);
     }
     return this.i2c.writeBits(MPU9250.SMPLRT_DIV, 0, 8, sample_rate, (r) => {
