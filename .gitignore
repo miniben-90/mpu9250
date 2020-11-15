@@ -2,3 +2,4 @@ node_modules
 .eslintrc
 .vscode
 .vs
+dist

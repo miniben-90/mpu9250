@@ -77,7 +77,7 @@ var mpu = new mpu9250({
 
 ## Calibration
 
-All three sensors can be calibrated and the calibrated values provided as options.  See the `example.js` file for how
+All three sensors can be calibrated and the calibrated values provided as options.  See (in `examples` folder) the `example.js` file for how
 to apply the calibrated values.  Run the `calibrate_accel.js`, `calibrate_mag.js` and `calibrate_gyro.js` to calibrate
 the relevant sensors.  The output will display some JSON text, copy and paste this into your code. See the relevant
 JavaScript source file for the documentation on the calibration. 

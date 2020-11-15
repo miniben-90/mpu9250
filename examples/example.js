@@ -1,6 +1,6 @@
 'use strict';
 
-var mpu9250 = require('./mpu9250');
+var mpu9250 = require('./../index');
 
 // These values were generated using calibrate_mag.js - you will want to create your own.
 var MAG_CALIBRATION = {
@@ -39,7 +39,7 @@ var ACCEL_CALIBRATION = {
 // Instantiate and initialize.
 var mpu = new mpu9250({
     // i2c path (default is '/dev/i2c-1')
-    device: '/dev/i2c-2',
+    device: '/dev/i2c-1',
 
     // Enable/Disable debug mode (default false)
     DEBUG: true,

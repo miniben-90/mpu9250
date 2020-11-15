@@ -41,7 +41,7 @@ var NUM_READS = 500;
  */
 
 // Instantiate and initialize.
-var mpu9250 = require('./mpu9250');
+var mpu9250 = require('./../index');
 var sleep = require('sleep');
 
 var mpu = new mpu9250({
